@@ -65,7 +65,7 @@ export async function updateSession(request: NextRequest) {
     // If it's a subdomain, rewrite to storefront and skip auth check
     if (isSubdomain) {
       const shopSlug = hostname.split('.')[0]
-      url.pathname = `/storefront/${shopSlug}${url.pathname}`
+      url.pathname = `/${shopSlug}${url.pathname}`
       return NextResponse.rewrite(url)
     }
 
@@ -81,7 +81,7 @@ export async function updateSession(request: NextRequest) {
   if (isSubdomain) {
     const shopSlug = hostname.split('.')[0]
     // Rewrite to storefront routes
-    url.pathname = `/storefront/${shopSlug}${url.pathname}`
+    url.pathname = `/${shopSlug}${url.pathname}`
     return NextResponse.rewrite(url)
   }
 
