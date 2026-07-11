@@ -28,7 +28,8 @@ export async function updateSession(request: NextRequest) {
   const url = request.nextUrl.clone()
 
   // Detect subdomain for multi-tenant storefront routing
-  const hostname = request.headers.get('host') || ''
+  const hostHeader = request.headers.get('host') || ''
+  const hostname = hostHeader.split(':')[0] // Strip port for accurate hostname comparisons
   const appUrl = new URL(process.env.NEXT_PUBLIC_APP_URL!)
   const appHost = appUrl.hostname // e.g. zcart.space or localhost
 
