@@ -8,6 +8,7 @@ import ProductCard, { type ProductCardData } from '@/components/storefront/Produ
 import RecentlyViewedSection from '@/components/storefront/RecentlyViewedSection'
 import HeaderSearch from '@/components/storefront/HeaderSearch'
 import { getWishlistedProductIds } from './wishlist-actions'
+import { calculateDiscount } from '@/lib/storefront/pricing'
 import type { Metadata } from 'next'
 import type { ShopTheme } from '@/types/database'
 
@@ -60,7 +61,7 @@ export default async function StorefrontHomePage({ params }: { params: Promise<{
 
   const featured = productsList.filter(p => p.is_featured).slice(0, 6)
   const products = featured.length > 0 ? featured : productsList.slice(0, 6)
-  const discount = (mrp: number, price: number) => mrp > price ? Math.round((1 - price / mrp) * 100) : 0
+  const discount = calculateDiscount
 
   // Trending Now: top 3 featured products, ranked
   const trending = products.slice(0, 3)

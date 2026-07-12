@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { ArrowLeft, Flame, Tag } from 'lucide-react'
 import type { Metadata } from 'next'
 import DealCountdown from '@/components/storefront/DealCountdown'
+import { calculateDiscount } from '@/lib/storefront/pricing'
 
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string }> }): Promise<Metadata> {
   const supabase = await createClient()
@@ -55,11 +56,11 @@ export default async function SalePage({ params }: { params: Promise<{ shopSlug:
   })
 
   const dealOfTheDay = discountedProducts.length > 0 ? discountedProducts[0] : null
-  const otherSaleItems = discountedProducts.slice(1)
+  const remainingSaleItems = discountedProducts.slice(1)
+  const otherSaleItems = remainingSaleItems.slice(0, 12)
+  const hasMoreSaleItems = remainingSaleItems.length > 12
 
-  const getDiscountPercent = (mrp: number, price: number) => {
-    return Math.round((1 - price / mrp) * 100)
-  }
+  const getDiscountPercent = calculateDiscount
 
   return (
     <div data-storefront-theme="dark-gold" style={{ minHeight: '100vh', paddingBottom: '90px' }}>
@@ -131,9 +132,16 @@ export default async function SalePage({ params }: { params: Promise<{ shopSlug:
             {/* On Sale Grid */}
             {otherSaleItems.length > 0 && (
               <section>
-                <h2 className="sf-heading" style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                  <Tag size={18} color="var(--sf-text-secondary)" /> On Sale
-                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <h2 className="sf-heading" style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Tag size={18} color="var(--sf-text-secondary)" /> On Sale
+                  </h2>
+                  {hasMoreSaleItems && (
+                    <Link href={`/${shopSlug}/products?sale=true`} style={{ fontSize: '14px', color: 'var(--sf-text-secondary)' }}>
+                      View all
+                    </Link>
+                  )}
+                </div>
 
                 <div className="sf-product-grid" style={{ padding: 0 }}>
                   {otherSaleItems.map(product => {

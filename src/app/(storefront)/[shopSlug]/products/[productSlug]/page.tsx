@@ -6,9 +6,11 @@ import { ShoppingBag, ArrowLeft, Truck, Shield, RotateCcw, Star } from 'lucide-r
 import type { Metadata } from 'next'
 import type { ShopTheme } from '@/types/database'
 import ProductPurchaseControls from '@/components/storefront/ProductPurchaseControls'
+import ProductImageGallery from '@/components/storefront/ProductImageGallery'
 import RecentlyViewedTracker from '@/components/storefront/RecentlyViewedTracker'
 import ReviewForm from '@/components/storefront/ReviewForm'
 import { getWishlistedProductIds } from '../../wishlist-actions'
+import { calculateDiscount } from '@/lib/storefront/pricing'
 import { formatDistanceToNow } from 'date-fns'
 
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string; productSlug: string }> }): Promise<Metadata> {
@@ -45,8 +47,7 @@ export default async function ProductDetailPage({
 
   if (!product) notFound()
 
-  const disc = Number(product.mrp) > Number(product.selling_price)
-    ? Math.round((1 - Number(product.selling_price) / Number(product.mrp)) * 100) : 0
+  const disc = calculateDiscount(Number(product.mrp), Number(product.selling_price))
   const stock = product.inventory?.[0]?.quantity ?? null
   const inStock = stock === null || stock > 0
   const variants = (product.product_variants as { id: string; name: string; is_active: boolean }[]) ?? []
@@ -90,17 +91,14 @@ export default async function ProductDetailPage({
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: 'var(--space-6) var(--space-5)' }}>
         {/* Product layout */}
         <div className="product-detail-layout">
-          {/* Image */}
-          <div style={{
-            aspectRatio: '3/4', borderRadius: 'var(--radius-xl)', overflow: 'hidden',
-            background: 'var(--sf-surface)', position: 'relative',
-          }}>
-            {product.images?.[0] ? (
-              <Image src={product.images[0]} alt={product.name} fill sizes="(max-width: 768px) 100vw, 500px" style={{ objectFit: 'cover' }} priority />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sf-text-tertiary)' }}><ShoppingBag size={80} /></div>
-            )}
-          </div>
+          {/* Image gallery */}
+          <ProductImageGallery
+            images={product.images ?? []}
+            productName={product.name}
+            shopSlug={shopSlug}
+            productId={product.id}
+            initialWishlisted={isWishlisted}
+          />
 
           {/* Product info */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
@@ -205,7 +203,7 @@ export default async function ProductDetailPage({
             <h2 className="sf-heading" style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-5)' }}>You May Also Like</h2>
             <div className="sf-product-grid" style={{ padding: 0 }}>
               {related!.map((r) => {
-                const rDisc = Number(r.mrp) > Number(r.selling_price) ? Math.round((1 - Number(r.selling_price) / Number(r.mrp)) * 100) : 0
+                const rDisc = calculateDiscount(Number(r.mrp), Number(r.selling_price))
                 return (
                   <Link key={r.id} href={`/${shopSlug}/products/${r.slug}`} className="sf-product-card">
                     <div className="sf-product-image-wrap">

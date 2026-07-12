@@ -19,7 +19,7 @@ export async function signInWithOtp(email: string) {
   }
 }
 
-export async function verifyOtp(email: string, token: string) {
+export async function verifyOtp(email: string, token: string, redirectTo?: string) {
   const supabase = await createClient()
 
   const { error } = await supabase.auth.verifyOtp({
@@ -50,5 +50,8 @@ export async function verifyOtp(email: string, token: string) {
     }
   }
 
-  redirect('/user/profile')
+  // Only ever redirect to a relative path within this app — never trust an
+  // absolute/external URL here, which would otherwise be an open redirect.
+  const safeRedirect = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/user/profile'
+  redirect(safeRedirect)
 }

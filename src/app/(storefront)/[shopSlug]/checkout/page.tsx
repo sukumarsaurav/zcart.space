@@ -157,7 +157,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ shopSlug: s
             <div className="card">
               <div className="card-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <User size={18} color="var(--color-primary-400)" />
+                  <User size={18} color="var(--sf-accent, var(--color-primary-400))" />
                   <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>Contact Details</h2>
                 </div>
               </div>
@@ -183,7 +183,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ shopSlug: s
             <div className="card">
               <div className="card-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <MapPin size={18} color="var(--color-info-400)" />
+                  <MapPin size={18} color="var(--sf-accent, var(--color-info-400))" />
                   <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>Shipping Address</h2>
                 </div>
               </div>
@@ -218,15 +218,15 @@ export default function CheckoutPage({ params }: { params: Promise<{ shopSlug: s
                 </div>
               </div>
               <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-4)', border: `1px solid ${paymentMethod === 'online' ? 'var(--color-primary-500)' : 'var(--surface-border)'}`, borderRadius: 'var(--radius-lg)', background: paymentMethod === 'online' ? 'rgba(99,102,241,0.05)' : 'var(--surface-elevated)', cursor: 'pointer' }}>
-                  <input type="radio" name="payment" checked={paymentMethod === 'online'} onChange={() => setPaymentMethod('online')} style={{ width: 18, height: 18, accentColor: 'var(--color-primary-500)' }} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-4)', border: `1px solid ${paymentMethod === 'online' ? 'var(--sf-accent, var(--color-primary-500))' : 'var(--sf-border, var(--surface-border))'}`, borderRadius: 'var(--radius-lg)', background: paymentMethod === 'online' ? 'var(--sf-surface-raised, rgba(99,102,241,0.05))' : 'var(--sf-surface, var(--surface-elevated))', cursor: 'pointer' }}>
+                  <input type="radio" name="payment" checked={paymentMethod === 'online'} onChange={() => setPaymentMethod('online')} style={{ width: 18, height: 18, accentColor: 'var(--sf-accent, var(--color-primary-500))' }} />
                   <div>
                     <p style={{ fontWeight: 600 }}>Pay Online</p>
                     <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>UPI, Credit/Debit Cards, NetBanking</p>
                   </div>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-4)', border: `1px solid ${paymentMethod === 'cod' ? 'var(--color-primary-500)' : 'var(--surface-border)'}`, borderRadius: 'var(--radius-lg)', background: paymentMethod === 'cod' ? 'rgba(99,102,241,0.05)' : 'var(--surface-elevated)', cursor: 'pointer' }}>
-                  <input type="radio" name="payment" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} style={{ width: 18, height: 18, accentColor: 'var(--color-primary-500)' }} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-4)', border: `1px solid ${paymentMethod === 'cod' ? 'var(--sf-accent, var(--color-primary-500))' : 'var(--sf-border, var(--surface-border))'}`, borderRadius: 'var(--radius-lg)', background: paymentMethod === 'cod' ? 'var(--sf-surface-raised, rgba(99,102,241,0.05))' : 'var(--sf-surface, var(--surface-elevated))', cursor: 'pointer' }}>
+                  <input type="radio" name="payment" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} style={{ width: 18, height: 18, accentColor: 'var(--sf-accent, var(--color-primary-500))' }} />
                   <div>
                     <p style={{ fontWeight: 600 }}>Cash on Delivery (COD)</p>
                     <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>Pay when your order arrives</p>
@@ -265,7 +265,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ shopSlug: s
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-lg)', fontWeight: 800, marginTop: 'var(--space-2)' }}>
                     <span>Total</span>
-                    <span style={{ color: 'var(--color-primary-400)' }}>₹{total.toLocaleString('en-IN')}</span>
+                    <span style={{ color: 'var(--sf-accent, var(--color-primary-400))' }}>₹{total.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               </div>

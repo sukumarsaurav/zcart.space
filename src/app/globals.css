@@ -488,8 +488,8 @@ h1, h2, h3, h4, h5, h6 {
    CARD COMPONENT
 ───────────────────────────────────────────── */
 .card {
-  background: var(--surface-card);
-  border: 1px solid var(--surface-border);
+  background: var(--sf-surface, var(--surface-card));
+  border: 1px solid var(--sf-border, var(--surface-border));
   border-radius: var(--radius-xl);
   overflow: hidden;
   transition: all var(--transition-base);
@@ -507,7 +507,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .card-header {
   padding: var(--space-6);
-  border-bottom: 1px solid var(--surface-border);
+  border-bottom: 1px solid var(--sf-border, var(--surface-border));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -519,7 +519,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .card-footer {
   padding: var(--space-4) var(--space-6);
-  border-top: 1px solid var(--surface-border);
+  border-top: 1px solid var(--sf-border, var(--surface-border));
   background: rgba(255,255,255,0.01);
 }
 
@@ -1343,8 +1343,8 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   gap: var(--space-4);
   padding: var(--space-4);
-  background: var(--surface-card);
-  border: 1px solid var(--surface-border);
+  background: var(--sf-surface, var(--surface-card));
+  border: 1px solid var(--sf-border, var(--surface-border));
   border-radius: var(--radius-xl);
 }
 
@@ -2841,7 +2841,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .sf-cat-layout {
   display: flex;
-  min-height: calc(100vh - 57px);
+  align-items: flex-start;
 }
 
 .sf-cat-sidebar {

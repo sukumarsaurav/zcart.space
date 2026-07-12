@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ShoppingBag } from 'lucide-react'
 import WishlistButton from './WishlistButton'
+import { calculateDiscount } from '@/lib/storefront/pricing'
 
 export interface ProductCardData {
   id: string
@@ -22,12 +23,8 @@ interface ProductCardProps {
   minWidth?: number
 }
 
-function discount(mrp: number, price: number) {
-  return mrp > price ? Math.round((1 - price / mrp) * 100) : 0
-}
-
 export default function ProductCard({ shopSlug, product, wishlisted, rank, minWidth = 160 }: ProductCardProps) {
-  const disc = discount(Number(product.mrp), Number(product.selling_price))
+  const disc = calculateDiscount(Number(product.mrp), Number(product.selling_price))
 
   return (
     <Link
@@ -80,7 +77,7 @@ export default function ProductCard({ shopSlug, product, wishlisted, rank, minWi
       </div>
 
       <div style={{ padding: '12px' }}>
-        <p style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--sf-text-primary, var(--text-primary))', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {product.name}
         </p>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>

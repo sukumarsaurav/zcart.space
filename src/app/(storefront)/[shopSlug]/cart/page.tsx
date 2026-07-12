@@ -46,20 +46,20 @@ export default function CartPage({ params }: { params: Promise<{ shopSlug: strin
   const itemCount = cart.reduce((s, i) => s + i.quantity, 0)
 
   if (!loaded) {
-    return <div style={{ minHeight: '100vh', background: 'var(--surface-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>Loading…</div>
+    return <div style={{ minHeight: '100vh', background: 'var(--sf-bg, var(--surface-bg))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>Loading…</div>
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface-bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--sf-bg, var(--surface-bg))' }}>
       {/* Header */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(9,9,11,0.9)', backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid var(--surface-border)',
+        background: 'var(--sf-bg, rgba(9,9,11,0.9))', backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid var(--sf-border, var(--surface-border))',
       }}>
         <div style={{ maxWidth: 900, margin: '0 auto', padding: 'var(--space-4) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Link href={`/${shopSlug}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontWeight: 800 }}>
-            <ArrowLeft size={16} /> Back to shop
+            <ArrowLeft size={16} /> Back to Shop
           </Link>
           <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)' }}>{itemCount} items in cart</span>
         </div>

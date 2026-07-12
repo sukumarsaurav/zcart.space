@@ -7,11 +7,13 @@ import { Home, LayoutGrid, Tag, User } from 'lucide-react'
 export default function BottomNav({ shopSlug }: { shopSlug: string }) {
   const pathname = usePathname()
 
-  // Hide on certain pages (like checkout, order-success, or specific product list pages that use custom bottom bars)
+  // Hide on pages that render their own custom sticky bottom bar, to avoid
+  // the two fixed bars overlapping at the same screen position.
   if (
-    pathname.includes('/checkout') || 
+    pathname.includes('/checkout') ||
     pathname.includes('/order-success') ||
-    pathname.endsWith('/products') // We will use a custom bottom bar for Sort/Filter on products page
+    pathname.endsWith('/products') || // Sort/Filter bar on the products list page
+    /\/products\/[^/]+$/.test(pathname) // Buy Now bar on product detail pages
   ) {
     return null
   }

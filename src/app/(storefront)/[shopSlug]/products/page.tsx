@@ -8,6 +8,7 @@ import type { ShopTheme } from '@/types/database'
 import WishlistButton from '@/components/storefront/WishlistButton'
 import { getWishlistedProductIds } from '../wishlist-actions'
 import SortFilterBar from '@/components/storefront/SortFilterBar'
+import { calculateDiscount } from '@/lib/storefront/pricing'
 
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string }> }): Promise<Metadata> {
   const supabase = await createClient()
@@ -70,8 +71,14 @@ export default async function StorefrontProductsPage({
   const [sortCol, sortDir] = sortMap[sp.sort ?? 'newest'] ?? sortMap.newest
   query = query.order(sortCol, sortDir).limit(60)
 
-  const { data: products } = await query
-  const discount = (mrp: number, price: number) => mrp > price ? Math.round((1 - price / mrp) * 100) : 0
+  const { data: fetchedProducts } = await query
+  // PostgREST filters compare a column to a literal, not another column, so
+  // "on sale" (mrp > selling_price) can't be expressed as a query filter —
+  // apply it client-side after fetching instead.
+  const products = sp.sale === 'true'
+    ? (fetchedProducts ?? []).filter((p) => Number(p.mrp) > Number(p.selling_price))
+    : fetchedProducts
+  const discount = calculateDiscount
   const wishlistedIds = await getWishlistedProductIds(shopSlug)
 
   return (

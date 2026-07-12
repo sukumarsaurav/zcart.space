@@ -110,7 +110,7 @@ export default async function OrderSuccessPage({
           <div className="card" style={{ marginBottom: 'var(--space-8)' }}>
             <div className="card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <MapPin size={16} color="var(--color-info-400)" />
+                <MapPin size={16} color={pc} />
                 <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>Shipping Address</h2>
               </div>
             </div>
