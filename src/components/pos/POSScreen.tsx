@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
-import { Search, Plus, Minus, Trash2, ShoppingBag, X, User, CreditCard, Banknote, Smartphone, Check } from 'lucide-react'
+import { useState, useCallback, useRef, type KeyboardEvent } from 'react'
+import { Search, Plus, Minus, Trash2, ShoppingBag, X, User, CreditCard, Banknote, Smartphone, Check, ScanLine } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import BarcodeScannerModal from './BarcodeScannerModal'
 
 interface POSProduct {
   id: string
@@ -51,6 +52,8 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
   const [success, setSuccess] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'products' | 'cart'>('products')
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const [scanNotice, setScanNotice] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
   const filteredProducts = products.filter((p) => {
@@ -78,6 +81,43 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
       .filter((i) => i.quantity > 0)
     )
   }, [])
+
+  // Shared by both scan paths: a physical USB/Bluetooth barcode scanner (which
+  // just types the code + Enter into whatever input is focused) and the
+  // in-browser camera scanner below.
+  const handleBarcodeScanned = useCallback((code: string) => {
+    const match = products.find((p) => p.barcode === code)
+    if (match) {
+      if ((match.inventory?.[0]?.quantity ?? 0) === 0) {
+        setScanNotice(`"${match.name}" is out of stock`)
+      } else {
+        addToCart(match)
+        setScanNotice(`Added "${match.name}"`)
+      }
+      setSearch('')
+    } else {
+      setScanNotice(`No product found for barcode ${code}`)
+      setSearch(code)
+    }
+    setTimeout(() => setScanNotice(null), 2500)
+  }, [products, addToCart])
+
+  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return
+    const code = search.trim()
+    if (!code) return
+    // Only auto-add on an exact barcode match — a partial name search hitting
+    // Enter shouldn't silently add whatever happens to be first in the grid.
+    if (products.some((p) => p.barcode === code)) {
+      e.preventDefault()
+      handleBarcodeScanned(code)
+    }
+  }
+
+  const handleCameraDetected = useCallback((code: string) => {
+    setScannerOpen(false)
+    handleBarcodeScanned(code)
+  }, [handleBarcodeScanned])
 
   const removeItem = useCallback((productId: string) => {
     setCart((prev) => prev.filter((i) => i.product.id !== productId))
@@ -207,20 +247,38 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
       <div className={`pos-product-browser ${activeTab === 'cart' ? 'hidden-mobile' : ''}`}>
         {/* Search bar */}
         <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--surface-border)', background: 'var(--surface-card)' }}>
-          <div style={{ position: 'relative' }}>
-            <span style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }}>
-              <Search size={16} />
-            </span>
-            <input
-              ref={searchRef}
-              id="pos-search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search products or scan barcode…"
-              className="input input-icon-left"
-              autoFocus
-            />
+          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <span style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }}>
+                <Search size={16} />
+              </span>
+              <input
+                ref={searchRef}
+                id="pos-search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Search products or scan barcode…"
+                className="input input-icon-left"
+                autoFocus
+              />
+            </div>
+            <button
+              id="pos-scan-btn"
+              onClick={() => setScannerOpen(true)}
+              className="btn btn-secondary btn-icon"
+              aria-label="Scan barcode with camera"
+              title="Scan barcode with camera"
+            >
+              <ScanLine size={18} />
+            </button>
           </div>
+
+          {scanNotice && (
+            <p style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-xs)', color: scanNotice.startsWith('Added') ? 'var(--color-success-400)' : 'var(--color-warning-400)' }}>
+              {scanNotice}
+            </p>
+          )}
 
           {/* Categories */}
           <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)', overflowX: 'auto', paddingBottom: 4 }}>
@@ -449,6 +507,10 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
           </div>
         )}
       </div>
+
+      {scannerOpen && (
+        <BarcodeScannerModal onDetected={handleCameraDetected} onClose={() => setScannerOpen(false)} />
+      )}
     </div>
   )
 }
