@@ -31,11 +31,28 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const shop = Array.isArray(shopUser.shops) ? shopUser.shops[0] : shopUser.shops
 
+  // Real notification sources: low-stock items and orders awaiting action.
+  const [{ data: lowStock }, { count: pendingOrders }] = await Promise.all([
+    supabase
+      .from('inventory')
+      .select('product_id, quantity, reorder_point, products(name)')
+      .eq('shop_id', shop.id)
+      .filter('quantity', 'lte', 'reorder_point')
+      .limit(5),
+    supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('shop_id', shop.id)
+      .eq('status', 'pending'),
+  ])
+
   return (
     <DashboardShell
       shopName={shop.name}
       shopSlug={shop.slug}
       userEmail={user.email ?? ''}
+      lowStockItems={lowStock ?? []}
+      pendingOrdersCount={pendingOrders ?? 0}
     >
       {children}
     </DashboardShell>

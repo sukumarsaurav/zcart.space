@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Package, Search, Edit2, Archive, Eye } from 'lucide-react'
+import { Plus, Package, Search, Edit2, Archive, ArchiveRestore, Eye } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { Product, ProductStatus } from '@/types/database'
+import { setProductStatus } from './actions'
 
 export const metadata: Metadata = { title: 'Products' }
 
@@ -24,10 +25,12 @@ export default async function ProductsPage({
 
   const { data: shopUser } = await supabase
     .from('shop_users')
-    .select('shop_id')
+    .select('shop_id, shops(slug)')
     .eq('auth_user_id', user.id)
     .single()
   if (!shopUser) redirect('/login')
+
+  const shopSlug = (Array.isArray(shopUser.shops) ? shopUser.shops[0] : shopUser.shops)?.slug
 
   const params = await searchParams
   const q = params.q ?? ''
@@ -203,14 +206,28 @@ export default async function ProductsPage({
                           >
                             <Edit2 size={14} />
                           </Link>
-                          <Link
-                            href={`/shop/preview/${product.slug}`}
-                            className="btn btn-ghost btn-icon btn-sm"
-                            title="Preview on storefront"
-                            id={`preview-product-${product.id}`}
-                          >
-                            <Eye size={14} />
-                          </Link>
+                          {shopSlug && (
+                            <Link
+                              href={`/${shopSlug}/products/${product.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-ghost btn-icon btn-sm"
+                              title="Preview on storefront"
+                              id={`preview-product-${product.id}`}
+                            >
+                              <Eye size={14} />
+                            </Link>
+                          )}
+                          <form action={setProductStatus.bind(null, product.id, shopUser.shop_id, product.status === 'archived' ? 'active' : 'archived')}>
+                            <button
+                              type="submit"
+                              className="btn btn-ghost btn-icon btn-sm"
+                              title={product.status === 'archived' ? 'Restore product' : 'Archive product'}
+                              id={`archive-product-${product.id}`}
+                            >
+                              {product.status === 'archived' ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+                            </button>
+                          </form>
                         </div>
                       </td>
                     </tr>

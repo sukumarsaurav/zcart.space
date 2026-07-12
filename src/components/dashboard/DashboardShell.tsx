@@ -9,9 +9,11 @@ interface DashboardShellProps {
   shopName: string
   shopSlug: string
   userEmail: string
+  lowStockItems: { product_id: string; quantity: number; reorder_point: number; products: { name: string } | { name: string }[] | null }[]
+  pendingOrdersCount: number
 }
 
-export default function DashboardShell({ children, shopName, shopSlug, userEmail }: DashboardShellProps) {
+export default function DashboardShell({ children, shopName, shopSlug, userEmail, lowStockItems, pendingOrdersCount }: DashboardShellProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -29,6 +31,8 @@ export default function DashboardShell({ children, shopName, shopSlug, userEmail
           shopSlug={shopSlug}
           userEmail={userEmail}
           onOpenMobile={() => setMobileOpen(true)}
+          lowStockItems={lowStockItems}
+          pendingOrdersCount={pendingOrdersCount}
         />
         <main className="dashboard-content">
           {children}

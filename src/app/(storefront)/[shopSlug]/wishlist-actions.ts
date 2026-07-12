@@ -1,44 +1,12 @@
 'use server'
 
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { resolveCustomerId } from '@/lib/storefront/customer'
 
 export type ToggleWishlistResult =
   | { requiresLogin: true }
   | { requiresLogin: false; wishlisted: boolean }
-
-// Finds (or lazily creates) the shop-scoped `customers` row for the currently
-// logged-in shopper. Mirrors the phone-based lookup in api/checkout/route.ts,
-// but keyed by auth_user_id since a wishlist requires a real login.
-async function resolveCustomerId(shopSlug: string, authUserId: string, email: string | null) {
-  const supabaseService = await createServiceClient()
-
-  const { data: shop } = await supabaseService.from('shops').select('id').eq('slug', shopSlug).single()
-  if (!shop) return null
-
-  const { data: existing } = await supabaseService
-    .from('customers')
-    .select('id')
-    .eq('shop_id', shop.id)
-    .eq('auth_user_id', authUserId)
-    .maybeSingle()
-
-  if (existing) return existing.id
-
-  const { data: created, error } = await supabaseService
-    .from('customers')
-    .insert({
-      shop_id: shop.id,
-      auth_user_id: authUserId,
-      name: email?.split('@')[0] ?? 'Customer',
-      email,
-    })
-    .select('id')
-    .single()
-
-  if (error) return null
-  return created.id
-}
 
 export async function toggleWishlist(shopSlug: string, productId: string): Promise<ToggleWishlistResult> {
   const supabase = await createClient()

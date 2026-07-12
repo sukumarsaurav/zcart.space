@@ -16,13 +16,27 @@ export default async function UserProfilePage() {
   }
 
   // Fetch global profile
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from('global_profiles')
     .select('*')
     .eq('auth_user_id', user.id)
     .single()
 
-  // Fallback if profile row wasn't created for some reason
+  // Lazily create the profile row if it wasn't created during OTP login (e.g.
+  // accounts created before that logic existed) — addresses need a real profile_id.
+  if (!profile) {
+    const { data: created } = await supabase
+      .from('global_profiles')
+      .insert({
+        auth_user_id: user.id,
+        full_name: user.email?.split('@')[0] || 'User',
+        avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email ?? 'User')}&background=random`,
+      })
+      .select('*')
+      .single()
+    profile = created
+  }
+
   const safeProfile = profile || {
     id: 'temp-id',
     full_name: user.email?.split('@')[0] || 'User',

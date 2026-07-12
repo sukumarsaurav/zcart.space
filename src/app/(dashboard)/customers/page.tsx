@@ -27,7 +27,7 @@ export default async function CustomersPage({
 
   let query = supabase
     .from('customers')
-    .select('id, name, phone, email, total_orders, total_spent, credit_balance, created_at', { count: 'exact' })
+    .select('id, name, phone, email, total_orders, total_spent, outstanding_credit, created_at', { count: 'exact' })
     .eq('shop_id', shopUser.shop_id)
     .order('total_spent', { ascending: false })
     .range(from, from + pageSize - 1)
@@ -77,13 +77,14 @@ export default async function CustomersPage({
                   <th>Total Spent</th>
                   <th>Credit Balance</th>
                   <th>Since</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {customers.map((c) => (
                   <tr key={c.id}>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                      <Link href={`/customers/${c.id}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', color: 'inherit' }}>
                         <div style={{
                           width: 32, height: 32, borderRadius: 'var(--radius-full)',
                           background: 'linear-gradient(135deg, var(--color-primary-600), var(--color-accent-600))',
@@ -93,7 +94,7 @@ export default async function CustomersPage({
                           {(c.name ?? '?').slice(0, 2).toUpperCase()}
                         </div>
                         <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{c.name}</span>
-                      </div>
+                      </Link>
                     </td>
                     <td>
                       {c.phone && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}><Phone size={12} /> {c.phone}</div>}
@@ -102,14 +103,17 @@ export default async function CustomersPage({
                     <td><span className="badge badge-neutral">{c.total_orders ?? 0}</span></td>
                     <td style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{fmtINR(Number(c.total_spent ?? 0))}</td>
                     <td>
-                      {Number(c.credit_balance ?? 0) > 0 ? (
-                        <span className="badge badge-warning">{fmtINR(Number(c.credit_balance))}</span>
+                      {Number(c.outstanding_credit ?? 0) > 0 ? (
+                        <span className="badge badge-warning">{fmtINR(Number(c.outstanding_credit))}</span>
                       ) : (
                         <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)' }}>₹0</span>
                       )}
                     </td>
                     <td style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
                       {format(new Date(c.created_at), 'dd MMM yy')}
+                    </td>
+                    <td>
+                      <Link href={`/customers/${c.id}`} className="btn btn-ghost btn-sm">View</Link>
                     </td>
                   </tr>
                 ))}

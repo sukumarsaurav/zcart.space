@@ -14,18 +14,23 @@ interface AddToCartButtonProps {
   shopSlug: string
   primaryColor: string
   disabled?: boolean
+  variantId?: string | null
+  variantName?: string | null
+  validate?: () => boolean
 }
 
-export default function AddToCartButton({ product, shopSlug, primaryColor, disabled }: AddToCartButtonProps) {
+export default function AddToCartButton({ product, shopSlug, primaryColor, disabled, variantId, variantName, validate }: AddToCartButtonProps) {
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
 
   const handleAdd = () => {
+    if (validate && !validate()) return
+
     // Get existing cart from localStorage
     const storageKey = `zcart_cart_${shopSlug}`
     const existing = JSON.parse(localStorage.getItem(storageKey) ?? '[]')
 
-    const idx = existing.findIndex((i: any) => i.productId === product.id)
+    const idx = existing.findIndex((i: any) => i.productId === product.id && (i.variantId ?? null) === (variantId ?? null))
     if (idx >= 0) {
       existing[idx].quantity += quantity
     } else {
@@ -36,6 +41,8 @@ export default function AddToCartButton({ product, shopSlug, primaryColor, disab
         image: product.images?.[0] ?? null,
         unit: product.unit,
         quantity,
+        variantId: variantId ?? null,
+        variantName: variantName ?? null,
       })
     }
 

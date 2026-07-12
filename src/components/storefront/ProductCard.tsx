@@ -60,7 +60,7 @@ export default function ProductCard({ shopSlug, product, wishlisted, rank, minWi
 
         {disc > 0 && (
           <div style={{
-            position: 'absolute', top: '8px', right: rank !== undefined ? undefined : '8px', left: rank !== undefined ? '38px' : undefined,
+            position: 'absolute', left: '8px', top: rank !== undefined ? '40px' : '8px',
             background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
             color: '#fff', fontSize: '11px', fontWeight: 600,
             padding: '4px 8px', borderRadius: '8px',

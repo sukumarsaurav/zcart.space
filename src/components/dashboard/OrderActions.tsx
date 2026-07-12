@@ -1,27 +1,31 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { CheckCircle, XCircle, Truck, Package } from 'lucide-react'
+import { CheckCircle, XCircle, Truck, Package, Undo2 } from 'lucide-react'
+import { updateOrderStatus } from '@/app/(dashboard)/orders/actions'
 import type { OrderStatus } from '@/types/database'
 
-const TRANSITIONS: Record<OrderStatus, { next: OrderStatus; label: string; icon: React.ComponentType<any>; className: string }[]> = {
+const TRANSITIONS: Record<OrderStatus, { next: OrderStatus; label: string; icon: React.ComponentType<any>; className: string; confirm?: string }[]> = {
   pending: [
     { next: 'confirmed', label: 'Confirm', icon: CheckCircle, className: 'btn-success' },
-    { next: 'cancelled', label: 'Cancel', icon: XCircle, className: 'btn-danger' },
+    { next: 'cancelled', label: 'Cancel', icon: XCircle, className: 'btn-danger', confirm: 'Cancel this order? This will restock any deducted inventory.' },
   ],
   confirmed: [
     { next: 'processing', label: 'Start Processing', icon: Package, className: 'btn-primary' },
-    { next: 'cancelled', label: 'Cancel', icon: XCircle, className: 'btn-danger' },
+    { next: 'cancelled', label: 'Cancel', icon: XCircle, className: 'btn-danger', confirm: 'Cancel this order? This will restock any deducted inventory.' },
   ],
   processing: [
     { next: 'shipped', label: 'Mark Shipped', icon: Truck, className: 'btn-primary' },
+    { next: 'cancelled', label: 'Cancel', icon: XCircle, className: 'btn-danger', confirm: 'Cancel this order? This will restock any deducted inventory.' },
   ],
   shipped: [
     { next: 'delivered', label: 'Mark Delivered', icon: CheckCircle, className: 'btn-success' },
+    { next: 'refunded', label: 'Refund', icon: Undo2, className: 'btn-danger', confirm: 'Refund this order? This will restock inventory and mark the payment as refunded.' },
   ],
-  delivered: [],
+  delivered: [
+    { next: 'refunded', label: 'Refund', icon: Undo2, className: 'btn-danger', confirm: 'Refund this order? This will restock inventory and mark the payment as refunded.' },
+  ],
   cancelled: [],
   refunded: [],
 }
@@ -32,12 +36,12 @@ export default function OrderActions({ orderId, shopId, currentStatus }: { order
   const [error, setError] = useState<string | null>(null)
   const actions = TRANSITIONS[currentStatus] ?? []
 
-  const updateStatus = async (next: OrderStatus) => {
+  const updateStatus = async (next: OrderStatus, confirmMessage?: string) => {
+    if (confirmMessage && !window.confirm(confirmMessage)) return
     setError(null)
-    const supabase = createClient()
     startTransition(async () => {
-      const { error } = await supabase.from('orders').update({ status: next }).eq('id', orderId).eq('shop_id', shopId)
-      if (error) { setError(error.message); return }
+      const result = await updateOrderStatus(orderId, shopId, currentStatus, next)
+      if (result.error) { setError(result.error); return }
       router.refresh()
     })
   }
@@ -51,10 +55,10 @@ export default function OrderActions({ orderId, shopId, currentStatus }: { order
       </div>
       <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
         {error && <p style={{ color: 'var(--color-danger-400)', fontSize: 'var(--text-sm)' }}>{error}</p>}
-        {actions.map(({ next, label, icon: Icon, className }) => (
+        {actions.map(({ next, label, icon: Icon, className, confirm }) => (
           <button
             key={next}
-            onClick={() => updateStatus(next)}
+            onClick={() => updateStatus(next, confirm)}
             disabled={isPending}
             className={`btn ${className} ${isPending ? 'btn-loading' : ''}`}
             style={{ justifyContent: 'center' }}

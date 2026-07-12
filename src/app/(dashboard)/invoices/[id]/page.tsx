@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Printer, Download, Receipt } from 'lucide-react'
+import { ArrowLeft, Download, Receipt } from 'lucide-react'
 import { format } from 'date-fns'
 import type { Metadata } from 'next'
 import { ClassicInvoice, ModernInvoice } from '@/components/invoices/InvoiceTemplates'
+import PrintInvoiceButton from '@/components/invoices/PrintInvoiceButton'
 
 export const metadata: Metadata = { title: 'Invoice Details' }
 
@@ -56,7 +57,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       {/* Header Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="no-print" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/invoices" className="btn btn-ghost btn-sm">
           <ArrowLeft size={16} /> Back to Invoices
         </Link>
@@ -66,9 +67,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <Download size={14} /> Download PDF
             </a>
           )}
-          <button className="btn btn-primary btn-sm" style={{ background: pc }}>
-            <Printer size={14} /> Print
-          </button>
+          <PrintInvoiceButton color={pc} />
         </div>
       </div>
 

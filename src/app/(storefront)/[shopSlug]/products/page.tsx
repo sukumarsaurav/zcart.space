@@ -2,9 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingBag, ArrowLeft, ArrowUpDown, SlidersHorizontal, Heart } from 'lucide-react'
+import { ShoppingBag, ArrowLeft } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { ShopTheme } from '@/types/database'
+import WishlistButton from '@/components/storefront/WishlistButton'
+import { getWishlistedProductIds } from '../wishlist-actions'
+import SortFilterBar from '@/components/storefront/SortFilterBar'
 
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string }> }): Promise<Metadata> {
   const supabase = await createClient()
@@ -18,7 +21,7 @@ export default async function StorefrontProductsPage({
   searchParams,
 }: {
   params: Promise<{ shopSlug: string }>
-  searchParams: Promise<{ category?: string; q?: string; sort?: string; sale?: string }>
+  searchParams: Promise<{ category?: string; q?: string; sort?: string; sale?: string; minPrice?: string; maxPrice?: string }>
 }) {
   const supabase = await createClient()
   const { shopSlug } = await params
@@ -30,9 +33,11 @@ export default async function StorefrontProductsPage({
   const theme = shop.theme as ShopTheme
   const pc = theme.primary_color ?? '#6366f1'
 
-  // Fetch categories for filter
+  // Fetch categories for filter (includes subcategories, for resolving deep links
+  // like ?category=mens-fashion-t-shirts) — the chip row below only renders top-level ones.
   const { data: categories } = await supabase
-    .from('categories').select('id, name, slug, image_url').eq('shop_id', shop.id).eq('is_active', true).order('sort_order')
+    .from('categories').select('id, name, slug, image_url, parent_id').eq('shop_id', shop.id).eq('is_active', true).order('sort_order')
+  const topLevelCategories = (categories ?? []).filter((c) => !c.parent_id)
 
   // Build product query
   let query = supabase
@@ -53,6 +58,8 @@ export default async function StorefrontProductsPage({
     query = query.ilike('name', `%${sp.q}%`)
     categoryName = `Search: ${sp.q}`
   }
+  if (sp.minPrice) query = query.gte('selling_price', Number(sp.minPrice))
+  if (sp.maxPrice) query = query.lte('selling_price', Number(sp.maxPrice))
 
   const sortMap: Record<string, [string, { ascending: boolean }]> = {
     newest: ['created_at', { ascending: false }],
@@ -65,6 +72,7 @@ export default async function StorefrontProductsPage({
 
   const { data: products } = await query
   const discount = (mrp: number, price: number) => mrp > price ? Math.round((1 - price / mrp) * 100) : 0
+  const wishlistedIds = await getWishlistedProductIds(shopSlug)
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '90px' /* space for bottom bar */ }}>
@@ -81,8 +89,8 @@ export default async function StorefrontProductsPage({
         </div>
       </header>
 
-      {/* Category chip row */}
-      {(categories?.length ?? 0) > 0 && (
+      {/* Category chip row (top-level only) */}
+      {topLevelCategories.length > 0 && (
         <div className="sf-chip-row">
           <Link href={`/${shopSlug}/products`} className={`sf-chip ${!sp.category ? 'active' : ''}`}>
             <div className="sf-chip-avatar">
@@ -91,7 +99,7 @@ export default async function StorefrontProductsPage({
             <p className="sf-chip-label">All</p>
           </Link>
 
-          {categories!.map((cat) => (
+          {topLevelCategories.map((cat) => (
             <Link key={cat.id} href={`/${shopSlug}/products?category=${cat.slug}`} className={`sf-chip ${sp.category === cat.slug ? 'active' : ''}`}>
               <div className="sf-chip-avatar" style={{ position: 'relative' }}>
                 {cat.image_url ? (
@@ -128,7 +136,7 @@ export default async function StorefrontProductsPage({
                     </div>
                   )}
                   {disc > 0 && <div className="sf-badge-discount">-{disc}%</div>}
-                  <div className="sf-wishlist-btn"><Heart size={16} /></div>
+                  <WishlistButton shopSlug={shopSlug} productId={product.id} initialWishlisted={wishlistedIds.has(product.id)} />
                 </div>
                 <p className="sf-product-title">{product.name}</p>
                 <div className="sf-price-row">
@@ -142,20 +150,7 @@ export default async function StorefrontProductsPage({
       )}
 
       {/* Sticky Bottom Bar for Sort & Filter */}
-      <div className="sf-sticky-bottom-bar" style={{ padding: 0 }}>
-        <button style={{
-          flex: 1, padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          color: 'var(--sf-text-primary)', fontSize: '14px', fontWeight: 500, borderRight: '1px solid var(--sf-border)',
-        }}>
-          <ArrowUpDown size={16} /> Sort
-        </button>
-        <button style={{
-          flex: 1, padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          color: 'var(--sf-text-primary)', fontSize: '14px', fontWeight: 500,
-        }}>
-          <SlidersHorizontal size={16} /> Filter
-        </button>
-      </div>
+      <SortFilterBar />
 
     </div>
   )

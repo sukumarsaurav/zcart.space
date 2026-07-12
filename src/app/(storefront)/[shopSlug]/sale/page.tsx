@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Flame, Tag } from 'lucide-react'
 import type { Metadata } from 'next'
-import SaleCountdown from './SaleCountdown'
+import DealCountdown from '@/components/storefront/DealCountdown'
 
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string }> }): Promise<Metadata> {
   const supabase = await createClient()
@@ -32,11 +32,20 @@ export default async function SalePage({ params }: { params: Promise<{ shopSlug:
   // Fetch all discounted products (where MRP > selling_price)
   const { data: products } = await supabase
     .from('products')
-    .select('id, name, slug, images, selling_price, mrp, category:categories(name)')
+    .select('id, name, slug, images, selling_price, mrp, metadata, category:categories(name)')
     .eq('shop_id', shop.id)
     .eq('status', 'active')
-  
+
   const discountedProducts = (products || []).filter(p => Number(p.mrp) > Number(p.selling_price))
+
+  // A real countdown only makes sense against a real end time — reuse the same
+  // is_deal_of_the_day / deal_end_time metadata the home page's Deal of the
+  // Day section uses, rather than a fabricated end-of-day timer.
+  const now = new Date()
+  const dealEndTime = discountedProducts.find((p) => {
+    const meta = p.metadata as { is_deal_of_the_day?: boolean; deal_end_time?: string } | null
+    return meta?.is_deal_of_the_day && (!meta.deal_end_time || new Date(meta.deal_end_time) > now)
+  })?.metadata as { deal_end_time?: string } | undefined
 
   // Sort by highest discount percentage
   discountedProducts.sort((a, b) => {
@@ -112,7 +121,7 @@ export default async function SalePage({ params }: { params: Promise<{ shopSlug:
                           ₹{Number(dealOfTheDay.mrp).toLocaleString('en-IN')}
                         </span>
                       </div>
-                      <SaleCountdown />
+                      {dealEndTime?.deal_end_time && <DealCountdown targetDate={dealEndTime.deal_end_time} isDark />}
                     </div>
                   </div>
                 </div>

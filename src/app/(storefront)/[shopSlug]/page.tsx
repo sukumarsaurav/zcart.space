@@ -2,8 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingBag, Search, Bell, Heart, ChevronRight, ArrowRight, User, Timer } from 'lucide-react'
+import { ShoppingBag, Bell, Heart, ChevronRight, ArrowRight, User, Timer } from 'lucide-react'
 import DealCountdown from '@/components/storefront/DealCountdown'
+import ProductCard, { type ProductCardData } from '@/components/storefront/ProductCard'
+import RecentlyViewedSection from '@/components/storefront/RecentlyViewedSection'
+import HeaderSearch from '@/components/storefront/HeaderSearch'
+import { getWishlistedProductIds } from './wishlist-actions'
 import type { Metadata } from 'next'
 import type { ShopTheme } from '@/types/database'
 
@@ -33,14 +37,15 @@ export default async function StorefrontHomePage({ params }: { params: Promise<{
   const theme = shop.theme as ShopTheme
   const pc = theme.primary_color ?? '#6366f1'
 
-  // Fetch categories and products
-  const [{ data: categories }, { data: allProducts }] = await Promise.all([
-    supabase.from('categories').select('id, name, slug, image_url').eq('shop_id', shop.id).eq('is_active', true).order('sort_order').limit(10),
-    supabase.from('products').select('id, name, slug, images, selling_price, mrp, metadata, is_featured').eq('shop_id', shop.id).eq('status', 'active'),
+  // Fetch top-level categories, all products, and this visitor's wishlist
+  const [{ data: categories }, { data: allProducts }, wishlistedIds] = await Promise.all([
+    supabase.from('categories').select('id, name, slug, image_url').eq('shop_id', shop.id).eq('is_active', true).is('parent_id', null).order('sort_order').limit(10),
+    supabase.from('products').select('id, name, slug, images, selling_price, mrp, metadata, is_featured, category_id').eq('shop_id', shop.id).eq('status', 'active'),
+    getWishlistedProductIds(shopSlug),
   ])
 
   const productsList = allProducts || []
-  
+
   // Find Deal of the Day
   const now = new Date()
   let dealOfTheDay = null
@@ -56,6 +61,21 @@ export default async function StorefrontHomePage({ params }: { params: Promise<{
   const featured = productsList.filter(p => p.is_featured).slice(0, 6)
   const products = featured.length > 0 ? featured : productsList.slice(0, 6)
   const discount = (mrp: number, price: number) => mrp > price ? Math.round((1 - price / mrp) * 100) : 0
+
+  // Trending Now: top 3 featured products, ranked
+  const trending = products.slice(0, 3)
+
+  // One horizontal row of products per top-level category
+  const productsByCategory = new Map<string, ProductCardData[]>()
+  for (const p of productsList) {
+    if (!p.category_id) continue
+    const list = productsByCategory.get(p.category_id) ?? []
+    list.push(p)
+    productsByCategory.set(p.category_id, list)
+  }
+  const categoryRows = (categories ?? [])
+    .map((cat) => ({ category: cat, products: (productsByCategory.get(cat.id) ?? []).slice(0, 8) }))
+    .filter((row) => row.products.length > 0)
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface-bg)' }}>
@@ -89,9 +109,9 @@ export default async function StorefrontHomePage({ params }: { params: Promise<{
           </nav>
 
           {/* Icon Cluster Right */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '20px', color: 'var(--text-secondary)' }}>
-            <button aria-label="Search"><Search size={20} /></button>
-            <button aria-label="Wishlist"><Heart size={20} /></button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '20px', color: 'var(--text-secondary)', position: 'relative' }}>
+            <HeaderSearch shopSlug={shopSlug} />
+            <Link href={`/${shopSlug}/wishlist`} aria-label="Wishlist"><Heart size={20} /></Link>
             <Link href={`/user/profile`} aria-label="Profile"><User size={20} /></Link>
             <Link href={`/${shopSlug}/cart`} aria-label="Cart"><ShoppingBag size={20} /></Link>
           </div>
@@ -121,10 +141,10 @@ export default async function StorefrontHomePage({ params }: { params: Promise<{
           </Link>
           
           {/* Icon Cluster Right */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)' }}>
-            <button aria-label="Search"><Search size={20} /></button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)', position: 'relative' }}>
+            <HeaderSearch shopSlug={shopSlug} />
             <button aria-label="Notifications"><Bell size={20} /></button>
-            <button aria-label="Wishlist"><Heart size={20} /></button>
+            <Link href={`/${shopSlug}/wishlist`} aria-label="Wishlist"><Heart size={20} /></Link>
             <Link href={`/${shopSlug}/cart`} aria-label="Cart"><ShoppingBag size={20} /></Link>
           </div>
         </div>
@@ -276,6 +296,29 @@ export default async function StorefrontHomePage({ params }: { params: Promise<{
           </section>
         )}
 
+        {/* Trending Now (Horizontal Scroll, ranked) */}
+        {trending.length > 0 && (
+          <section style={{ padding: '0 16px', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                📈 Trending Now
+              </h2>
+              <Link href={`/${shopSlug}/products`} style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
+                See all <ChevronRight size={16} />
+              </Link>
+            </div>
+
+            <div style={{
+              display: 'flex', gap: '16px', overflowX: 'auto', scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none',
+            }} className="no-scrollbar">
+              {trending.map((product, i) => (
+                <ProductCard key={product.id} shopSlug={shopSlug} product={product} wishlisted={wishlistedIds.has(product.id)} rank={i + 1} />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Categories (Horizontal Scroll) */}
         {(categories?.length ?? 0) > 0 && (
           <section id="categories" style={{ marginBottom: '32px' }}>
@@ -329,57 +372,35 @@ export default async function StorefrontHomePage({ params }: { params: Promise<{
           </div>
           
           <div className="responsive-product-grid">
-            {products?.map((product) => {
-              const disc = discount(Number(product.mrp), Number(product.selling_price))
-              return (
-                <Link key={product.id} href={`/${shopSlug}/products/${product.slug}`} style={{
-                  background: 'var(--surface-card)', borderRadius: '16px', overflow: 'hidden',
-                  display: 'flex', flexDirection: 'column'
-                }}>
-                  {/* Image container */}
-                  <div style={{ aspectRatio: '3/4', background: 'var(--surface-elevated)', position: 'relative', overflow: 'hidden' }}>
-                    {product.images?.[0] ? (
-                      <Image src={product.images[0]} alt={product.name} fill sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 250px" style={{ objectFit: 'cover' }} />
-                    ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
-                        <ShoppingBag size={32} />
-                      </div>
-                    )}
-                    
-                    {/* Discount Badge */}
-                    {disc > 0 && (
-                      <div style={{
-                        position: 'absolute', top: '8px', left: '8px',
-                        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-                        color: '#fff', fontSize: '11px', fontWeight: 600,
-                        padding: '4px 8px', borderRadius: '8px',
-                      }}>
-                        -{disc}%
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Product Details */}
-                  <div style={{ padding: '12px' }}>
-                    <p style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {product.name}
-                    </p>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                      <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        ₹{Number(product.selling_price).toLocaleString('en-IN')}
-                      </span>
-                      {disc > 0 && (
-                        <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
-                          ₹{Number(product.mrp).toLocaleString('en-IN')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
+            {products?.map((product) => (
+              <ProductCard key={product.id} shopSlug={shopSlug} product={product} wishlisted={wishlistedIds.has(product.id)} minWidth={0} />
+            ))}
           </div>
         </section>
+
+        {/* Recently Viewed (client-driven, localStorage) */}
+        <RecentlyViewedSection shopSlug={shopSlug} wishlistedIds={Array.from(wishlistedIds)} />
+
+        {/* One horizontal row per top-level category */}
+        {categoryRows.map(({ category, products: catProducts }) => (
+          <section key={category.id} style={{ padding: '0 16px', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 700 }}>{category.name}</h2>
+              <Link href={`/${shopSlug}/products?category=${category.slug}`} style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
+                See All <ChevronRight size={16} />
+              </Link>
+            </div>
+
+            <div style={{
+              display: 'flex', gap: '16px', overflowX: 'auto', scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none',
+            }} className="no-scrollbar">
+              {catProducts.map((product) => (
+                <ProductCard key={product.id} shopSlug={shopSlug} product={product} wishlisted={wishlistedIds.has(product.id)} />
+              ))}
+            </div>
+          </section>
+        ))}
       </main>
     </div>
   )

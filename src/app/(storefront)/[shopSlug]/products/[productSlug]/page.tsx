@@ -1,11 +1,15 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingBag, ArrowLeft, Truck, Shield, RotateCcw, Heart, Ruler, Star } from 'lucide-react'
+import { ShoppingBag, ArrowLeft, Truck, Shield, RotateCcw, Star } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { ShopTheme } from '@/types/database'
-import AddToCartButton from '@/components/storefront/AddToCartButton'
+import ProductPurchaseControls from '@/components/storefront/ProductPurchaseControls'
+import RecentlyViewedTracker from '@/components/storefront/RecentlyViewedTracker'
+import ReviewForm from '@/components/storefront/ReviewForm'
+import { getWishlistedProductIds } from '../../wishlist-actions'
+import { formatDistanceToNow } from 'date-fns'
 
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string; productSlug: string }> }): Promise<Metadata> {
   const supabase = await createClient()
@@ -57,8 +61,25 @@ export default async function ProductDetailPage({
     .eq('category_id', product.category_id ?? '')
     .limit(4)
 
+  const wishlistedIds = await getWishlistedProductIds(shopSlug)
+  const isWishlisted = wishlistedIds.has(product.id)
+
+  // Service client: reviewer name is intentionally public alongside a published
+  // review, but the anon client's RLS on `customers` only allows reading your
+  // own row — this join needs to surface other shoppers' display names too.
+  const supabaseService = await createServiceClient()
+  const { data: reviews } = await supabaseService
+    .from('product_reviews')
+    .select('id, rating, title, body, created_at, customers(name)')
+    .eq('product_id', product.id)
+    .eq('is_published', true)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '96px' }}>
+      <RecentlyViewedTracker shopSlug={shopSlug} productSlug={productSlug} />
+
       {/* Header */}
       <header className="sf-header">
         <Link href={`/${shopSlug}/products`} className="sf-back-link">
@@ -111,25 +132,15 @@ export default async function ProductDetailPage({
               </p>
             )}
 
-            {/* Size / variant selector */}
-            {variants.length > 0 && (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
-                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--sf-text-secondary)' }}>Size</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-xs)', color: 'var(--sf-text-secondary)' }}>
-                    <Ruler size={13} /> Size Guide
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                  {variants.map((v) => (
-                    <div key={v.id} className={`sf-size-swatch ${v.is_active ? '' : 'unavailable'}`}>{v.name}</div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Quantity + Add to cart */}
-            <AddToCartButton product={product} shopSlug={shopSlug} primaryColor={pc} disabled={!inStock} />
+            {/* Size selector + Quantity + Add to cart (shared state, incl. sticky bar) */}
+            <ProductPurchaseControls
+              product={product}
+              shopSlug={shopSlug}
+              primaryColor={pc}
+              outOfStock={!inStock}
+              variants={variants}
+              initialWishlisted={isWishlisted}
+            />
 
             {/* Stock */}
             {stock !== null && !inStock && (
@@ -154,13 +165,36 @@ export default async function ProductDetailPage({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
                 <h2 className="sf-heading" style={{ fontSize: 'var(--text-lg)' }}>Customer Reviews</h2>
-                <button className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--sf-border)', color: 'var(--sf-text-primary)' }}>
-                  Write a Review
-                </button>
+                <ReviewForm shopSlug={shopSlug} productId={product.id} />
               </div>
-              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--sf-text-secondary)' }}>
-                No reviews yet. Be the first to review this product!
-              </p>
+              {!reviews?.length ? (
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--sf-text-secondary)' }}>
+                  No reviews yet. Be the first to review this product!
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                  {reviews.map((r) => {
+                    const reviewer = Array.isArray(r.customers) ? r.customers[0]?.name : (r.customers as any)?.name
+                    return (
+                      <div key={r.id} style={{ paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--sf-border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
+                          <div style={{ display: 'flex' }}>
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star key={i} size={14} fill={i < r.rating ? 'var(--color-warning-400)' : 'none'} color="var(--color-warning-400)" />
+                            ))}
+                          </div>
+                          <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>{reviewer ?? 'Verified Buyer'}</span>
+                          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--sf-text-tertiary)' }}>
+                            · {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+                          </span>
+                        </div>
+                        {r.title && <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 2 }}>{r.title}</p>}
+                        {r.body && <p style={{ fontSize: 'var(--text-sm)', color: 'var(--sf-text-secondary)' }}>{r.body}</p>}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -190,14 +224,6 @@ export default async function ProductDetailPage({
             </div>
           </section>
         )}
-      </div>
-
-      {/* Sticky bottom bar */}
-      <div className="sf-sticky-bottom-bar">
-        <button className="sf-icon-btn" aria-label="Add to wishlist"><Heart size={18} /></button>
-        <div style={{ flex: 1 }}>
-          <AddToCartButton product={product} shopSlug={shopSlug} primaryColor={pc} disabled={!inStock} />
-        </div>
       </div>
     </div>
   )

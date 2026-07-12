@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { Warehouse, AlertTriangle, Search } from 'lucide-react'
 import type { Metadata } from 'next'
+import AdjustStockButton from '@/components/dashboard/AdjustStockButton'
 
 export const metadata: Metadata = { title: 'Inventory' }
 
@@ -23,7 +25,7 @@ export default async function InventoryPage({
 
   let query = supabase
     .from('inventory')
-    .select('id, product_id, quantity, reserved, reorder_point, updated_at, products(name, sku, images, status, unit)')
+    .select('id, product_id, location_id, variant_id, quantity, reserved, reorder_point, updated_at, products(name, sku, images, status, unit)')
     .eq('shop_id', shopUser.shop_id)
     .order('quantity', { ascending: true })
 
@@ -59,10 +61,10 @@ export default async function InventoryPage({
           {filter !== 'all' && <input type="hidden" name="filter" value={filter} />}
         </form>
         <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-          <a href="/inventory" className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}>All</a>
-          <a href="/inventory?filter=low" className={`btn btn-sm ${filter === 'low' ? 'btn-primary' : 'btn-secondary'}`}>
+          <Link href="/inventory" className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}>All</Link>
+          <Link href="/inventory?filter=low" className={`btn btn-sm ${filter === 'low' ? 'btn-primary' : 'btn-secondary'}`}>
             <AlertTriangle size={13} /> Low stock {lowStockCount > 0 && `(${lowStockCount})`}
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -84,6 +86,7 @@ export default async function InventoryPage({
                 <th>Reorder Point</th>
                 <th>Status</th>
                 <th>Last Updated</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -141,6 +144,16 @@ export default async function InventoryPage({
                     </td>
                     <td style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
                       {new Date(item.updated_at).toLocaleDateString('en-IN')}
+                    </td>
+                    <td>
+                      <AdjustStockButton
+                        shopId={shopUser.shop_id}
+                        productId={item.product_id}
+                        locationId={item.location_id}
+                        variantId={item.variant_id}
+                        currentQuantity={qty}
+                        unit={item.products?.unit ?? 'pcs'}
+                      />
                     </td>
                   </tr>
                 )
