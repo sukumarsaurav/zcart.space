@@ -292,6 +292,41 @@ export interface Invoice {
   created_at: string
 }
 
+export interface Plan {
+  id: string
+  key: ShopPlan
+  name: string
+  tagline: string | null
+  price_monthly: number | null
+  price_yearly: number | null
+  currency: string
+  max_products: number | null
+  max_storefronts: number | null
+  max_staff: number | null
+  max_locations: number | null
+  is_popular: boolean
+  cta_label: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface FeatureCatalogEntry {
+  id: string
+  key: string
+  label: string
+  category: string
+  sort_order: number
+}
+
+export interface PlanFeature {
+  plan_id: string
+  feature_id: string
+  is_included: boolean
+  note: string | null
+}
+
 // ─────────────────────────────────────────────────────────────────
 // Database interface for Supabase client typing
 // ─────────────────────────────────────────────────────────────────
