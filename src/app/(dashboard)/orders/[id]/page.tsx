@@ -163,7 +163,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         {/* Right */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           {/* Actions */}
-          <OrderActions orderId={order.id} currentStatus={order.status as OrderStatus} />
+          <OrderActions orderId={order.id} shopId={shopUser.shop_id} currentStatus={order.status as OrderStatus} />
 
           {/* Customer */}
           {(order as any).customers && (

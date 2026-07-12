@@ -50,29 +50,12 @@ export default function AddToCartButton({ product, shopSlug, primaryColor, disab
   return (
     <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
       {/* Quantity */}
-      <div style={{
-        display: 'flex', alignItems: 'center', border: '1px solid var(--surface-border)',
-        borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-      }}>
-        <button
-          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-          style={{
-            width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'var(--surface-elevated)', border: 'none', cursor: 'pointer', color: 'var(--text-primary)',
-          }}
-          aria-label="Decrease quantity"
-        >
+      <div className="sf-quantity-stepper">
+        <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="Decrease quantity">
           <Minus size={15} />
         </button>
-        <span style={{ width: 48, textAlign: 'center', fontWeight: 600, fontSize: 'var(--text-sm)' }}>{quantity}</span>
-        <button
-          onClick={() => setQuantity((q) => q + 1)}
-          style={{
-            width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'var(--surface-elevated)', border: 'none', cursor: 'pointer', color: 'var(--text-primary)',
-          }}
-          aria-label="Increase quantity"
-        >
+        <span>{quantity}</span>
+        <button onClick={() => setQuantity((q) => q + 1)} aria-label="Increase quantity">
           <Plus size={15} />
         </button>
       </div>
@@ -82,21 +65,20 @@ export default function AddToCartButton({ product, shopSlug, primaryColor, disab
         onClick={handleAdd}
         disabled={disabled}
         id="add-to-cart-btn"
+        className="sf-cta-primary"
         style={{
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
           padding: 'var(--space-3) var(--space-6)',
-          background: disabled ? 'var(--surface-elevated)' : primaryColor,
-          color: disabled ? 'var(--text-tertiary)' : '#fff',
-          border: 'none', borderRadius: 'var(--radius-lg)',
-          fontSize: 'var(--text-sm)', fontWeight: 700,
+          border: 'none',
           cursor: disabled ? 'not-allowed' : 'pointer',
-          transition: 'all 0.2s',
           opacity: disabled ? 0.5 : 1,
           minHeight: 44,
+          background: disabled ? 'var(--sf-surface-raised, var(--surface-elevated))' : undefined,
+          color: disabled ? 'var(--sf-text-tertiary, var(--text-tertiary))' : undefined,
         }}
       >
         <ShoppingCart size={16} />
-        {added ? 'Added!' : disabled ? 'Out of Stock' : 'Add to Cart'}
+        {added ? 'Added!' : disabled ? 'Out of Stock' : 'Buy Now'}
       </button>
     </div>
   )

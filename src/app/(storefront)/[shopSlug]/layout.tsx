@@ -57,7 +57,7 @@ export default async function StorefrontLayout({
         .input { border-radius: var(--shop-radius) !important; }
         img { border-radius: var(--shop-radius) !important; }
       `}</style>
-      <div data-shop-slug={shopSlug} data-shop-id={shop.id} data-template={theme.template} style={{ paddingBottom: '70px' }}>
+      <div data-shop-slug={shopSlug} data-shop-id={shop.id} data-template={theme.template} data-storefront-theme="dark-gold" style={{ paddingBottom: '70px' }}>
         {children}
         <BottomNav shopSlug={shopSlug} />
       </div>

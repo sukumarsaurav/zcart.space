@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingBag, ArrowLeft, Minus, Plus, ShoppingCart, Truck, Shield, RotateCcw } from 'lucide-react'
+import { ShoppingBag, ArrowLeft, Truck, Shield, RotateCcw, Heart, Ruler, Star } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { ShopTheme } from '@/types/database'
 import AddToCartButton from '@/components/storefront/AddToCartButton'
@@ -33,7 +33,7 @@ export default async function ProductDetailPage({
 
   const { data: product } = await supabase
     .from('products')
-    .select('*, categories(name, slug), inventory(quantity)')
+    .select('*, categories(name, slug), inventory(quantity), product_variants(id, name, is_active)')
     .eq('slug', productSlug)
     .eq('shop_id', shop.id)
     .eq('status', 'active')
@@ -45,6 +45,7 @@ export default async function ProductDetailPage({
     ? Math.round((1 - Number(product.selling_price) / Number(product.mrp)) * 100) : 0
   const stock = product.inventory?.[0]?.quantity ?? null
   const inStock = stock === null || stock > 0
+  const variants = (product.product_variants as { id: string; name: string; is_active: boolean }[]) ?? []
 
   // Related products
   const { data: related } = await supabase
@@ -57,72 +58,26 @@ export default async function ProductDetailPage({
     .limit(4)
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface-bg)' }}>
+    <div style={{ minHeight: '100vh', paddingBottom: '96px' }}>
       {/* Header */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(9,9,11,0.9)', backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid var(--surface-border)',
-      }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: 'var(--space-4) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link href={`/${shopSlug}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontWeight: 800, fontSize: 'var(--text-lg)' }}>
-            <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: pc, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ShoppingBag size={16} color="white" />
-            </div>
-            {shop.name}
-          </Link>
-          <Link href={`/${shopSlug}/cart`} className="btn btn-sm" style={{ background: pc, color: '#fff', borderRadius: 'var(--radius-full)', gap: 'var(--space-2)' }}>
-            <ShoppingBag size={14} /> Cart
-          </Link>
-        </div>
+      <header className="sf-header">
+        <Link href={`/${shopSlug}/products`} className="sf-back-link">
+          <ArrowLeft size={20} /> Back to Shop
+        </Link>
       </header>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: 'var(--space-8) var(--space-6)' }}>
-        {/* Breadcrumb */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-8)', fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)' }}>
-          <Link href={`/${shopSlug}`} style={{ color: pc }}>Home</Link>
-          <span>/</span>
-          <Link href={`/${shopSlug}/products`} style={{ color: pc }}>Products</Link>
-          {product.categories && (
-            <>
-              <span>/</span>
-              <Link href={`/${shopSlug}/products?category=${(product.categories as any).slug}`} style={{ color: pc }}>
-                {(product.categories as any).name}
-              </Link>
-            </>
-          )}
-          <span>/</span>
-          <span style={{ color: 'var(--text-primary)' }}>{product.name}</span>
-        </div>
-
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: 'var(--space-6) var(--space-5)' }}>
         {/* Product layout */}
         <div className="product-detail-layout">
-          {/* Images */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            <div style={{
-              aspectRatio: '1', borderRadius: 'var(--radius-2xl)', overflow: 'hidden',
-              background: 'var(--surface-card)', border: '1px solid var(--surface-border)',
-              position: 'relative'
-            }}>
-              {product.images?.[0] ? (
-                <Image src={product.images[0]} alt={product.name} fill sizes="(max-width: 768px) 100vw, 500px" style={{ objectFit: 'cover' }} priority />
-              ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}><ShoppingBag size={80} /></div>
-              )}
-            </div>
-            {product.images?.length > 1 && (
-              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                {product.images.map((img: string, i: number) => (
-                  <div key={i} style={{
-                    width: 64, height: 64, borderRadius: 'var(--radius-md)', overflow: 'hidden',
-                    border: i === 0 ? `2px solid ${pc}` : '1px solid var(--surface-border)',
-                    cursor: 'pointer',
-                    position: 'relative'
-                  }}>
-                    <Image src={img} alt={`${product.name} ${i + 1}`} fill sizes="64px" style={{ objectFit: 'cover' }} />
-                  </div>
-                ))}
-              </div>
+          {/* Image */}
+          <div style={{
+            aspectRatio: '3/4', borderRadius: 'var(--radius-xl)', overflow: 'hidden',
+            background: 'var(--sf-surface)', position: 'relative',
+          }}>
+            {product.images?.[0] ? (
+              <Image src={product.images[0]} alt={product.name} fill sizes="(max-width: 768px) 100vw, 500px" style={{ objectFit: 'cover' }} priority />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sf-text-tertiary)' }}><ShoppingBag size={80} /></div>
             )}
           </div>
 
@@ -131,96 +86,118 @@ export default async function ProductDetailPage({
             {product.categories && (
               <span style={{
                 fontSize: 'var(--text-xs)', fontWeight: 600, textTransform: 'uppercase',
-                letterSpacing: '0.06em', color: pc,
+                letterSpacing: '0.08em', color: 'var(--sf-text-secondary)',
               }}>{(product.categories as any).name}</span>
             )}
-            <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 800, lineHeight: 1.2 }}>{product.name}</h1>
+            <h1 className="sf-heading" style={{ fontSize: 'var(--text-3xl)', lineHeight: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+              {product.name}
+            </h1>
 
             {/* Pricing */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 'var(--text-3xl)', fontWeight: 800 }}>₹{Number(product.selling_price).toLocaleString('en-IN')}</span>
+              <span className="sf-price" style={{ fontSize: 'var(--text-3xl)' }}>₹{Number(product.selling_price).toLocaleString('en-IN')}</span>
               {disc > 0 && (
                 <>
-                  <span style={{ fontSize: 'var(--text-xl)', color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>₹{Number(product.mrp).toLocaleString('en-IN')}</span>
-                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,0.1)', padding: '2px 10px', borderRadius: 'var(--radius-full)' }}>{disc}% OFF</span>
+                  <span className="sf-price-strike" style={{ fontSize: 'var(--text-lg)' }}>₹{Number(product.mrp).toLocaleString('en-IN')}</span>
+                  <span className="sf-discount-pill">{disc}% OFF</span>
                 </>
               )}
             </div>
 
-            {/* GST info */}
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
-              {product.tax_inclusive ? 'Price inclusive of GST' : `+ ${product.gst_rate}% GST`}
-              {product.hsn_code && ` · HSN: ${product.hsn_code}`}
-            </p>
+            {/* Description */}
+            {product.description && (
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--sf-text-secondary)', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+                {product.description}
+              </p>
+            )}
 
-            {/* Stock */}
-            {stock !== null && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <span style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: inStock ? '#22c55e' : '#ef4444',
-                }} />
-                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: inStock ? 'var(--color-success-400)' : 'var(--color-danger-400)' }}>
-                  {inStock ? 'In Stock' : 'Out of Stock'}
-                </span>
+            {/* Size / variant selector */}
+            {variants.length > 0 && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--sf-text-secondary)' }}>Size</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-xs)', color: 'var(--sf-text-secondary)' }}>
+                    <Ruler size={13} /> Size Guide
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                  {variants.map((v) => (
+                    <div key={v.id} className={`sf-size-swatch ${v.is_active ? '' : 'unavailable'}`}>{v.name}</div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Add to cart */}
+            {/* Quantity + Add to cart */}
             <AddToCartButton product={product} shopSlug={shopSlug} primaryColor={pc} disabled={!inStock} />
 
+            {/* Stock */}
+            {stock !== null && !inStock && (
+              <p style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-danger-400)' }}>Out of Stock</p>
+            )}
+
             {/* Trust signals */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)',
-              paddingTop: 'var(--space-4)', borderTop: '1px solid var(--surface-border)',
-            }}>
+            <div className="sf-trust-row">
               {[
-                { icon: Truck, label: 'Free delivery on eligible orders' },
-                { icon: Shield, label: 'Secure payments' },
-                { icon: RotateCcw, label: 'Easy returns' },
+                { icon: Truck, label: 'Free Shipping' },
+                { icon: RotateCcw, label: 'Easy Returns' },
+                { icon: Shield, label: 'Secure Payment' },
               ].map(({ icon: Icon, label }) => (
-                <div key={label} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  <Icon size={18} color="var(--text-tertiary)" />
-                  <span style={{ fontSize: 10, color: 'var(--text-tertiary)', lineHeight: 1.4 }}>{label}</span>
+                <div key={label} className="sf-trust-item">
+                  <Icon size={18} />
+                  <span>{label}</span>
                 </div>
               ))}
             </div>
 
-            {/* Description */}
-            {product.description && (
-              <div style={{ borderTop: '1px solid var(--surface-border)', paddingTop: 'var(--space-5)' }}>
-                <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-3)' }}>Description</h2>
-                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-                  {product.description}
-                </div>
+            {/* Reviews */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+                <h2 className="sf-heading" style={{ fontSize: 'var(--text-lg)' }}>Customer Reviews</h2>
+                <button className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--sf-border)', color: 'var(--sf-text-primary)' }}>
+                  Write a Review
+                </button>
               </div>
-            )}
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--sf-text-secondary)' }}>
+                No reviews yet. Be the first to review this product!
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Related products */}
         {(related?.length ?? 0) > 0 && (
-          <section style={{ marginTop: 'var(--space-16)' }}>
-            <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 700, marginBottom: 'var(--space-6)' }}>You may also like</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 'var(--space-5)' }}>
-              {related!.map((r) => (
-                <Link key={r.id} href={`/${shopSlug}/products/${r.slug}`} style={{
-                  background: 'var(--surface-card)', border: '1px solid var(--surface-border)',
-                  borderRadius: 'var(--radius-xl)', overflow: 'hidden',
-                }}>
-                  <div style={{ aspectRatio: '1', background: 'var(--surface-elevated)', position: 'relative' }}>
-                    {r.images?.[0] ? <Image src={r.images[0]} alt={r.name} fill sizes="(max-width: 768px) 50vw, 200px" style={{ objectFit: 'cover' }} /> :
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}><ShoppingBag size={32} /></div>}
-                  </div>
-                  <div style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                    <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 4 }}>{r.name}</p>
-                    <span style={{ fontWeight: 700 }}>₹{Number(r.selling_price).toLocaleString('en-IN')}</span>
-                  </div>
-                </Link>
-              ))}
+          <section style={{ marginTop: 'var(--space-12)' }}>
+            <h2 className="sf-heading" style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-5)' }}>You May Also Like</h2>
+            <div className="sf-product-grid" style={{ padding: 0 }}>
+              {related!.map((r) => {
+                const rDisc = Number(r.mrp) > Number(r.selling_price) ? Math.round((1 - Number(r.selling_price) / Number(r.mrp)) * 100) : 0
+                return (
+                  <Link key={r.id} href={`/${shopSlug}/products/${r.slug}`} className="sf-product-card">
+                    <div className="sf-product-image-wrap">
+                      {r.images?.[0] ? <Image src={r.images[0]} alt={r.name} fill sizes="(max-width: 768px) 50vw, 200px" style={{ objectFit: 'cover' }} /> :
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sf-text-tertiary)' }}><ShoppingBag size={32} /></div>}
+                      {rDisc > 0 && <div className="sf-badge-discount">-{rDisc}%</div>}
+                    </div>
+                    <p className="sf-product-title">{r.name}</p>
+                    <div className="sf-price-row">
+                      <span className="sf-price">₹{Number(r.selling_price).toLocaleString('en-IN')}</span>
+                      {rDisc > 0 && <span className="sf-price-strike">₹{Number(r.mrp).toLocaleString('en-IN')}</span>}
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </section>
         )}
+      </div>
+
+      {/* Sticky bottom bar */}
+      <div className="sf-sticky-bottom-bar">
+        <button className="sf-icon-btn" aria-label="Add to wishlist"><Heart size={18} /></button>
+        <div style={{ flex: 1 }}>
+          <AddToCartButton product={product} shopSlug={shopSlug} primaryColor={pc} disabled={!inStock} />
+        </div>
       </div>
     </div>
   )

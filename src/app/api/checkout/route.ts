@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { createInvoiceForOrder } from '@/lib/invoicing'
+import { sendOrderConfirmationEmail } from '@/lib/email'
 import Razorpay from 'razorpay'
 
 // Initialize Razorpay only if keys are present (to avoid crashing on init if not set)
@@ -42,7 +44,9 @@ export async function POST(req: NextRequest) {
     // 3. Verify prices and calculate totals from DB
     const productIds = cart.map((i: any) => i.productId)
     const { data: dbProducts } = await supabase
-      .from('products').select('id, name, selling_price, mrp, gst_rate, unit').in('id', productIds)
+      .from('products').select('id, name, selling_price, mrp, gst_rate, unit')
+      .eq('shop_id', shop.id)
+      .in('id', productIds)
 
     if (!dbProducts || dbProducts.length === 0) {
       return NextResponse.json({ error: 'Products not found' }, { status: 400 })
@@ -118,6 +122,19 @@ export async function POST(req: NextRequest) {
           reference_id: order.id,
         })
       ))
+
+      const invoice = await createInvoiceForOrder(supabase, { shopId: shop.id, orderId: order.id })
+      if (customer.email) {
+        await sendOrderConfirmationEmail({
+          to: customer.email,
+          customerName: customer.name,
+          shopName: shop.name,
+          orderId: order.id,
+          items: itemsWithOrderId,
+          totalAmount: total,
+          invoiceUrl: invoice?.pdfUrl,
+        })
+      }
 
       return NextResponse.json({ success: true, orderId: order.id })
 

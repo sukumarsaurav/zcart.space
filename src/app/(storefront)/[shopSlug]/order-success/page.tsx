@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle, ShoppingBag, MapPin, Receipt, ArrowRight } from 'lucide-react'
@@ -26,7 +26,11 @@ export default async function OrderSuccessPage({
   const theme = shop.theme as ShopTheme
   const pc = theme.primary_color ?? '#6366f1'
 
-  const { data: order } = await supabase
+  // Order confirmation is looked up by an unguessable order id with no customer
+  // login, so this reads via the service client (bypasses RLS) rather than adding
+  // a public-read policy on orders/customers, which would expose all customer PII.
+  const serviceSupabase = await createServiceClient()
+  const { data: order } = await serviceSupabase
     .from('orders')
     .select('*, customers(name, phone, email), order_items(*)')
     .eq('id', id)

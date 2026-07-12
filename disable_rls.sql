@@ -1,5 +1,6 @@
--- Disable RLS for the MVP so the application can read/write data normally
--- Run this in your Supabase SQL Editor
+-- DEPRECATED — DO NOT RUN. Superseded by supabase/migrations/0001_enable_rls_policies.sql.
+-- This script leaves every table world-readable/writable to any authenticated user
+-- (cross-tenant data leak). Kept only for history.
 
 ALTER TABLE shops DISABLE ROW LEVEL SECURITY;
 ALTER TABLE shop_locations DISABLE ROW LEVEL SECURITY;

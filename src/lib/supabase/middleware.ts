@@ -30,13 +30,24 @@ export async function updateSession(request: NextRequest) {
   // Detect subdomain for multi-tenant storefront routing
   const hostHeader = request.headers.get('host') || ''
   const hostname = hostHeader.split(':')[0] // Strip port for accurate hostname comparisons
-  const appUrl = new URL(process.env.NEXT_PUBLIC_APP_URL!)
-  const appHost = appUrl.hostname // e.g. zcart.space or localhost
+  let appHost = hostname // fallback: if unset/unparsable, never treat any host as a subdomain
+  try {
+    if (process.env.NEXT_PUBLIC_APP_URL) {
+      appHost = new URL(process.env.NEXT_PUBLIC_APP_URL).hostname // e.g. zcart.space or localhost
+    }
+  } catch {
+    // malformed NEXT_PUBLIC_APP_URL — fall through with appHost === hostname (isSubdomain stays false)
+  }
 
-  // Check if this is a subdomain request (e.g. myshop.zcart.space)
+  // Check if this is a genuine subdomain of the configured app host (e.g.
+  // myshop.zcart.space). Anything that isn't literally a `*.appHost` label —
+  // including unrelated hosts like a Vercel preview/production URL — must
+  // NOT be treated as a subdomain, or the root site 404s trying to resolve
+  // that hostname as a shop slug.
   const isSubdomain =
     hostname !== appHost &&
     hostname !== `www.${appHost}` &&
+    hostname.endsWith(`.${appHost}`) &&
     !hostname.startsWith('localhost')
 
   // Protect dashboard routes — redirect to login if unauthenticated

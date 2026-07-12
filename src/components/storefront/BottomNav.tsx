@@ -24,16 +24,16 @@ export default function BottomNav({ shopSlug }: { shopSlug: string }) {
   ]
 
   return (
-    <nav 
-      className="md:hidden mobile-only" 
+    <nav
+      className="md:hidden mobile-only"
       style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
-        background: 'rgba(9,9,11,0.95)',
+        background: 'rgba(14,12,10,0.95)',
         backdropFilter: 'blur(16px)',
-        borderTop: '1px solid var(--surface-border)',
+        borderTop: '1px solid var(--sf-border, var(--surface-border))',
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
@@ -45,7 +45,7 @@ export default function BottomNav({ shopSlug }: { shopSlug: string }) {
     >
       {navItems.map((item) => {
         const isActive = pathname === item.href || (item.href !== `/${shopSlug}` && pathname.startsWith(item.href))
-        
+
         return (
           <Link
             key={item.name}
@@ -55,14 +55,14 @@ export default function BottomNav({ shopSlug }: { shopSlug: string }) {
               flexDirection: 'column',
               alignItems: 'center',
               gap: 4,
-              color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
+              color: isActive ? 'var(--sf-text-primary, var(--text-primary))' : 'var(--sf-text-tertiary, var(--text-tertiary))',
               transition: 'color 0.2s',
               flex: 1
             }}
           >
-            <item.icon size={20} style={{ 
+            <item.icon size={20} style={{
               strokeWidth: isActive ? 2.5 : 2,
-              color: isActive ? 'var(--shop-primary, var(--text-primary))' : 'inherit'
+              color: isActive ? 'var(--sf-accent, var(--shop-primary, var(--text-primary)))' : 'inherit'
             }} />
             <span style={{ fontSize: '10px', fontWeight: isActive ? 600 : 500 }}>
               {item.name}

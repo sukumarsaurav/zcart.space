@@ -26,7 +26,7 @@ const TRANSITIONS: Record<OrderStatus, { next: OrderStatus; label: string; icon:
   refunded: [],
 }
 
-export default function OrderActions({ orderId, currentStatus }: { orderId: string; currentStatus: OrderStatus }) {
+export default function OrderActions({ orderId, shopId, currentStatus }: { orderId: string; shopId: string; currentStatus: OrderStatus }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -36,7 +36,7 @@ export default function OrderActions({ orderId, currentStatus }: { orderId: stri
     setError(null)
     const supabase = createClient()
     startTransition(async () => {
-      const { error } = await supabase.from('orders').update({ status: next }).eq('id', orderId)
+      const { error } = await supabase.from('orders').update({ status: next }).eq('id', orderId).eq('shop_id', shopId)
       if (error) { setError(error.message); return }
       router.refresh()
     })

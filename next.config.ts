@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/storage/v1/object/public/**',
       },
+      {
+        // Placeholder imagery for dev-seeded demo data only.
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
     ],
   },
   async rewrites() {
