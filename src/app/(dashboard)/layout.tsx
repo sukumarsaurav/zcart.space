@@ -32,13 +32,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const shop = Array.isArray(shopUser.shops) ? shopUser.shops[0] : shopUser.shops
 
   // Real notification sources: low-stock items and orders awaiting action.
-  const [{ data: lowStock }, { count: pendingOrders }] = await Promise.all([
+  // PostgREST filters compare a column to a literal, not another column, so
+  // "quantity <= reorder_point" can't be expressed as a query filter — fetch
+  // and filter client-side instead.
+  const [{ data: inventory }, { count: pendingOrders }] = await Promise.all([
     supabase
       .from('inventory')
       .select('product_id, quantity, reorder_point, products(name)')
-      .eq('shop_id', shop.id)
-      .filter('quantity', 'lte', 'reorder_point')
-      .limit(5),
+      .eq('shop_id', shop.id),
     supabase
       .from('orders')
       .select('id', { count: 'exact', head: true })
@@ -46,12 +47,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .eq('status', 'pending'),
   ])
 
+  const lowStockItems = (inventory ?? [])
+    .filter((i) => Number(i.quantity) <= Number(i.reorder_point))
+    .slice(0, 5)
+
   return (
     <DashboardShell
       shopName={shop.name}
       shopSlug={shop.slug}
       userEmail={user.email ?? ''}
-      lowStockItems={lowStock ?? []}
+      lowStockItems={lowStockItems}
       pendingOrdersCount={pendingOrders ?? 0}
     >
       {children}

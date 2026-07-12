@@ -74,13 +74,13 @@ export default async function DashboardPage() {
       .from('customers')
       .select('id', { count: 'exact', head: true })
       .eq('shop_id', shopId),
-    // Low stock
+    // Low stock — PostgREST filters compare a column to a literal, not another
+    // column, so "quantity <= reorder_point" can't be expressed as a query
+    // filter; fetch and filter client-side below instead.
     supabase
       .from('inventory')
       .select('product_id, quantity, reorder_point, products(name)')
-      .eq('shop_id', shopId)
-      .filter('quantity', 'lte', 'reorder_point')
-      .limit(5),
+      .eq('shop_id', shopId),
     // Recent orders
     supabase
       .from('orders')
@@ -95,6 +95,8 @@ export default async function DashboardPage() {
   ])
 
   // Compute stats
+  const allLowStock = (lowStock ?? []).filter((i) => Number(i.quantity) <= Number(i.reorder_point))
+  const lowStockItems = allLowStock.slice(0, 5)
   const todayRevenue = (todayOrders ?? []).reduce((s, o) => s + Number(o.total_amount), 0)
   const todayOrderCount = todayOrders?.length ?? 0
   const monthRevenue = (monthOrders ?? []).reduce((s, o) => s + Number(o.total_amount), 0)
@@ -158,9 +160,9 @@ export default async function DashboardPage() {
         />
         <StatCard
           label="Low Stock Items"
-          value={String(lowStock?.length ?? 0)}
+          value={String(allLowStock.length)}
           trendUp={false}
-          trend={(lowStock?.length ?? 0) > 0 ? 'Needs attention' : 'All stocked up'}
+          trend={allLowStock.length > 0 ? 'Needs attention' : 'All stocked up'}
           icon={<AlertTriangle size={20} />}
           iconBg="rgba(239,68,68,0.12)"
           iconColor="var(--color-danger-400)"
@@ -176,7 +178,7 @@ export default async function DashboardPage() {
       {/* Bottom row */}
       <div className="grid-2" style={{ alignItems: 'start' }}>
         <RecentOrders orders={recentOrders ?? []} />
-        <LowStockWidget items={lowStock ?? []} />
+        <LowStockWidget items={lowStockItems} />
       </div>
     </div>
   )

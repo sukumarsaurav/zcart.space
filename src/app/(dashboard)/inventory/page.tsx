@@ -29,12 +29,16 @@ export default async function InventoryPage({
     .eq('shop_id', shopUser.shop_id)
     .order('quantity', { ascending: true })
 
-  if (filter === 'low') query = query.lte('quantity', 'reorder_point')
+  // PostgREST filters compare a column to a literal, not another column, so
+  // "quantity <= reorder_point" can't be expressed as a query filter —
+  // fetch everything and filter client-side below instead.
   if (params.q) query = query.ilike('products.name', `%${params.q}%`)
 
-  const { data: inventory } = await query
-
-  const lowStockCount = inventory?.filter((i) => Number(i.quantity) <= Number(i.reorder_point)).length ?? 0
+  const { data: allInventory } = await query
+  const lowStockCount = (allInventory ?? []).filter((i) => Number(i.quantity) <= Number(i.reorder_point)).length
+  const inventory = filter === 'low'
+    ? (allInventory ?? []).filter((i) => Number(i.quantity) <= Number(i.reorder_point))
+    : allInventory
 
   return (
     <div>
