@@ -144,7 +144,7 @@ export default function ShopSettingsForm({ shop, location }: Props) {
       {/* Left side: Form */}
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', maxWidth: 720 }}>
         {/* Tabs */}
-      <div style={{ display: 'flex', gap: 'var(--space-2)', borderBottom: '1px solid var(--surface-border)', paddingBottom: 'var(--space-2)' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', borderBottom: '1px solid var(--surface-border)', paddingBottom: 'var(--space-2)' }}>
         {['general', 'location', 'storefront', 'invoice'].map((tab) => (
           <button
             key={tab}

@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, ChevronRight, ShoppingBag } from 'lucide-react'
+import { ArrowLeft, ShoppingBag } from 'lucide-react'
 import type { Metadata } from 'next'
 
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string }> }): Promise<Metadata> {
@@ -52,7 +52,7 @@ export default async function CategoriesPage({
     return acc
   }, {} as Record<string, typeof allCategories>)
 
-  const selectedCategory = selected ? parentCategories.find((c) => c.slug === selected) : null
+  const selectedCategory = (selected ? parentCategories.find((c) => c.slug === selected) : null) ?? parentCategories[0] ?? null
   const subs = selectedCategory ? subCategoriesByParent[selectedCategory.id] ?? [] : []
 
   return (
@@ -63,7 +63,7 @@ export default async function CategoriesPage({
           <ArrowLeft size={20} />
         </Link>
         <h1 className="sf-heading" style={{ fontSize: 'var(--text-lg)', flex: 1 }}>
-          All Categories
+          {selectedCategory ? selectedCategory.name : 'All Categories'}
         </h1>
       </header>
 
@@ -77,7 +77,7 @@ export default async function CategoriesPage({
               <Link
                 key={cat.id}
                 href={`/${shopSlug}/categories?selected=${cat.slug}`}
-                className={`sf-cat-sidebar-item ${selected === cat.slug ? 'active' : ''}`}
+                className={`sf-cat-sidebar-item ${selectedCategory?.slug === cat.slug ? 'active' : ''}`}
               >
                 <div className="sf-cat-sidebar-icon">
                   {cat.image_url ? (
@@ -97,36 +97,20 @@ export default async function CategoriesPage({
               <div className="sf-cat-empty">Select a category to view subcategories</div>
             ) : (
               <>
-                <h2 className="sf-heading" style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
-                  {selectedCategory.name}
-                </h2>
-
-                <Link href={`/${shopSlug}/products?category=${selectedCategory.slug}`} className="sf-cat-view-all">
-                  View All {selectedCategory.name}
-                  <ChevronRight size={18} />
-                </Link>
-
                 {subs.length === 0 ? (
                   <div className="sf-cat-sub-empty">No subcategories available</div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                  <div className="sf-subcat-grid">
                     {subs.map((sub) => (
-                      <Link
-                        key={sub.id}
-                        href={`/${shopSlug}/products?category=${sub.slug}`}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-                          padding: 'var(--space-3)', border: '1px solid var(--sf-border)',
-                          borderRadius: 'var(--radius-md)', color: 'var(--sf-text-primary)',
-                        }}
-                      >
-                        {sub.image_url && (
-                          <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-sm)', overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
-                            <Image src={sub.image_url} alt="" fill sizes="32px" style={{ objectFit: 'cover' }} />
-                          </div>
-                        )}
-                        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, flex: 1 }}>{sub.name}</span>
-                        <ChevronRight size={16} color="var(--sf-text-tertiary)" />
+                      <Link key={sub.id} href={`/${shopSlug}/products?category=${sub.slug}`} className="sf-subcat-card">
+                        <div className="sf-subcat-cover">
+                          {sub.image_url ? (
+                            <Image src={sub.image_url} alt={sub.name} fill sizes="160px" style={{ objectFit: 'cover' }} />
+                          ) : (
+                            <ShoppingBag size={22} color="var(--sf-text-tertiary)" />
+                          )}
+                        </div>
+                        <span className="sf-subcat-label">{sub.name}</span>
                       </Link>
                     ))}
                   </div>

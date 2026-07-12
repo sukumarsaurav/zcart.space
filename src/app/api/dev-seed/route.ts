@@ -122,10 +122,10 @@ export async function GET() {
 
   // ── Categories ─────────────────────────────────────
   const categoryDefs = [
-    { name: "Men's Fashion", slug: 'mens-fashion', image_url: img('mens-fashion', 200, 200) },
-    { name: "Women's Fashion", slug: 'womens-fashion', image_url: img('womens-fashion', 200, 200) },
-    { name: 'Footwear', slug: 'footwear', image_url: img('footwear', 200, 200) },
-    { name: 'Accessories', slug: 'accessories', image_url: img('accessories', 200, 200) },
+    { name: "Men's Fashion", slug: 'mens-fashion', image_url: img('mens-fashion', 200, 200), subs: ['T-Shirts', 'Shirts', 'Jeans', 'Trousers'] },
+    { name: "Women's Fashion", slug: 'womens-fashion', image_url: img('womens-fashion', 200, 200), subs: ['Dresses', 'Tops', 'Kurtas', 'Sarees'] },
+    { name: 'Footwear', slug: 'footwear', image_url: img('footwear', 200, 200), subs: ['Sneakers', 'Formal Shoes', 'Sandals'] },
+    { name: 'Accessories', slug: 'accessories', image_url: img('accessories', 200, 200), subs: ['Bags', 'Sunglasses', 'Watches'] },
   ]
 
   const catBySlug = new Map<string, string>()
@@ -142,6 +142,23 @@ export async function GET() {
         .single()
       if (error) throw error
       if (newCat) catBySlug.set(c.slug, newCat.id)
+    }
+
+    // Subcategories — nested under each parent via parent_id
+    for (const c of categoryDefs) {
+      const parentId = catBySlug.get(c.slug)
+      if (!parentId) continue
+      for (const [j, subName] of c.subs.entries()) {
+        const subSlug = `${c.slug}-${subName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+        if (catBySlug.has(subSlug)) continue
+        const { data: newSub, error } = await supabase
+          .from('categories')
+          .insert({ shop_id: shopId, name: subName, slug: subSlug, parent_id: parentId, image_url: img(subSlug, 300, 300), sort_order: j, is_active: true })
+          .select('id')
+          .single()
+        if (error) throw error
+        if (newSub) catBySlug.set(subSlug, newSub.id)
+      }
     }
     log.push(`categories ready (${catBySlug.size})`)
   } catch (e: any) {

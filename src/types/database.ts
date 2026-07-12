@@ -192,6 +192,14 @@ export interface Customer {
   updated_at: string
 }
 
+export interface Wishlist {
+  id: string
+  shop_id: string
+  customer_id: string
+  product_id: string
+  created_at: string
+}
+
 export interface Order {
   id: string
   shop_id: string

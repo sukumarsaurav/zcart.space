@@ -44,24 +44,25 @@ export default function TopBar({ shopName, shopSlug, userEmail, onOpenMobile }: 
   return (
     <header className="topbar" style={{ position: 'sticky' }}>
       {/* Left: mobile menu + breadcrumb */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', minWidth: 0, flex: 1 }}>
         <button
           id="mobile-menu-btn"
           onClick={onOpenMobile}
           className="mobile-menu-btn btn btn-ghost btn-icon"
           aria-label="Open navigation menu"
+          style={{ flexShrink: 0 }}
         >
           <Menu size={18} />
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-secondary)' }}>{shopName}</p>
-          <span style={{ color: 'var(--surface-border)', fontSize: '18px', fontWeight: 300 }}>|</span>
-          <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>{pageTitle}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
+          <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shopName}</p>
+          <span style={{ color: 'var(--surface-border)', fontSize: '18px', fontWeight: 300, flexShrink: 0 }}>|</span>
+          <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pageTitle}</p>
         </div>
       </div>
 
       {/* Right: actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
         {/* View storefront */}
         <Link
           href={`/${shopSlug}`}
@@ -69,6 +70,7 @@ export default function TopBar({ shopName, shopSlug, userEmail, onOpenMobile }: 
           rel="noopener noreferrer"
           className="btn btn-secondary btn-sm"
           style={{ gap: 'var(--space-2)' }}
+          aria-label="View store"
         >
           <Store size={14} />
           <span style={{ display: 'none' }}>View store</span>

@@ -933,11 +933,18 @@ h1, h2, h3, h4, h5, h6 {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  margin-bottom: var(--space-4); /* reduced since title is hidden */
+  margin-bottom: var(--space-6);
 }
 
-.page-title, .page-subtitle {
-  display: none !important;
+.page-title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+}
+
+.page-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
 }
 
 /* ─────────────────────────────────────────────
@@ -2925,6 +2932,37 @@ h1, h2, h3, h4, h5, h6 {
   font-size: var(--text-sm);
   text-align: center;
   padding-top: var(--space-8);
+}
+
+.sf-subcat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: var(--space-3);
+}
+
+.sf-subcat-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--sf-text-primary);
+}
+
+.sf-subcat-cover {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--sf-surface);
+  border: 1px solid var(--sf-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sf-subcat-label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-align: center;
 }
 
 
