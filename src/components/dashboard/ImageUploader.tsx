@@ -23,7 +23,7 @@ export default function ImageUploader({ shopId, value, onChange, maxImages = 8 }
     const path = `${shopId}/products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
     const { error: uploadError } = await supabase.storage
-      .from('product-images')
+      .from('shop-assets')
       .upload(path, file, { cacheControl: '3600', upsert: false })
 
     if (uploadError) {
@@ -32,7 +32,7 @@ export default function ImageUploader({ shopId, value, onChange, maxImages = 8 }
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from('product-images')
+      .from('shop-assets')
       .getPublicUrl(path)
 
     return publicUrl
