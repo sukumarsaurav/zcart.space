@@ -16,7 +16,7 @@ export default async function POSPage() {
 
   const { data: products } = await supabase
     .from('products')
-    .select('id, name, slug, images, selling_price, mrp, gst_rate, unit, barcode, sku, category_id, categories(name), inventory(quantity)')
+    .select('id, name, slug, images, selling_price, mrp, gst_rate, unit, barcode, sku, category_id, track_inventory, categories(name), inventory(quantity)')
     .eq('shop_id', shopUser.shop_id)
     .eq('status', 'active')
     .order('name')

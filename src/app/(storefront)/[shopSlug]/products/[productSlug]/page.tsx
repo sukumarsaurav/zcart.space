@@ -49,7 +49,8 @@ export default async function ProductDetailPage({
 
   const disc = calculateDiscount(Number(product.mrp), Number(product.selling_price))
   const stock = product.inventory?.[0]?.quantity ?? null
-  const inStock = stock === null || stock > 0
+  // If track_inventory is false, always treat as in stock (unlimited supply)
+  const inStock = !product.track_inventory || stock === null || stock > 0
   const variants = (product.product_variants as { id: string; name: string; is_active: boolean }[]) ?? []
 
   // Related products

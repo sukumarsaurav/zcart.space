@@ -88,7 +88,7 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
   const handleBarcodeScanned = useCallback((code: string) => {
     const match = products.find((p) => p.barcode === code)
     if (match) {
-      if ((match.inventory?.[0]?.quantity ?? 0) === 0) {
+      if (match.track_inventory !== false && (match.inventory?.[0]?.quantity ?? 0) === 0) {
         setScanNotice(`"${match.name}" is out of stock`)
       } else {
         addToCart(match)
@@ -303,7 +303,7 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
           {filteredProducts.map((product) => {
             const stock = product.inventory?.[0]?.quantity ?? 0
             const inCart = cart.find((i) => i.product.id === product.id)
-            const outOfStock = stock === 0
+            const outOfStock = product.track_inventory !== false && stock === 0
 
             return (
               <button
