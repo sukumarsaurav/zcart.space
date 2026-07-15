@@ -58,7 +58,7 @@ export default function RevenueChart({ data }: Props) {
         ) : (
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" />
               <XAxis
                 dataKey="date"
                 tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}

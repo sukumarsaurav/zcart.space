@@ -33,7 +33,7 @@ export default function BottomNav({ shopSlug }: { shopSlug: string }) {
         bottom: 0,
         left: 0,
         right: 0,
-        background: 'rgba(14,12,10,0.95)',
+        background: 'rgba(250,249,247,0.95)',
         backdropFilter: 'blur(16px)',
         borderTop: '1px solid var(--sf-border, var(--surface-border))',
         display: 'flex',

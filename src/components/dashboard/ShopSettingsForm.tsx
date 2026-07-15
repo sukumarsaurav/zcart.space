@@ -140,7 +140,7 @@ export default function ShopSettingsForm({ shop, location }: Props) {
   }
 
   return (
-    <div style={{ display: 'flex', gap: 'var(--space-6)', height: '100%' }}>
+    <div className="settings-layout">
       {/* Left side: Form */}
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', maxWidth: 720 }}>
         {/* Tabs */}
@@ -499,7 +499,7 @@ export default function ShopSettingsForm({ shop, location }: Props) {
 
       {/* Right side: Live Preview */}
       {activeTab === 'invoice' ? (
-        <div style={{ 
+        <div className="settings-preview-panel" style={{ 
           flex: 1,
           background: 'var(--surface-sunken)',
           borderRadius: 'var(--radius-xl)',
@@ -533,7 +533,7 @@ export default function ShopSettingsForm({ shop, location }: Props) {
           </div>
         </div>
       ) : (
-        <div style={{ 
+        <div className="settings-preview-panel" style={{ 
           width: previewView === 'mobile' ? 375 : '45%',
           transition: 'width 0.3s ease',
           background: '#000',

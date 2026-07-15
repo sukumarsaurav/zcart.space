@@ -79,7 +79,7 @@ export default function SortFilterBar() {
                     onClick={() => { navigate({ sort: opt.value === 'newest' ? null : opt.value }); setOpenPanel(null) }}
                     style={{
                       textAlign: 'left', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)',
-                      background: currentSort === opt.value ? 'rgba(255,255,255,0.06)' : 'transparent',
+                      background: currentSort === opt.value ? 'rgba(15,23,42,0.04)' : 'transparent',
                       color: currentSort === opt.value ? 'var(--sf-accent)' : 'var(--sf-text-primary)',
                       fontWeight: currentSort === opt.value ? 600 : 500,
                     }}

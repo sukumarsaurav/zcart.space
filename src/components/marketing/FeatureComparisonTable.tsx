@@ -32,7 +32,7 @@ export default function FeatureComparisonTable({
             <Fragment key={category}>
               <tr>
                 <td colSpan={plans.length + 1} style={{
-                  background: 'rgba(255,255,255,0.02)', fontWeight: 700,
+                  background: 'rgba(15,23,42,0.03)', fontWeight: 700,
                   fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.06em',
                   color: 'var(--text-tertiary)',
                 }}>

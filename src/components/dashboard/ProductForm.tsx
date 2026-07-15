@@ -137,7 +137,7 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
   return (
     <>
     <form onSubmit={handleSubmit}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-6)', alignItems: 'start' }}>
+      <div className="product-form-layout">
         {/* Left — main fields */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           {error && (

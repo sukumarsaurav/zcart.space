@@ -45,7 +45,7 @@ export default function LowStockWidget({ items }: Props) {
               <div key={item.product_id} style={{
                 display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
                 padding: 'var(--space-3) var(--space-6)',
-                borderBottom: i < items.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                borderBottom: i < items.length - 1 ? '1px solid rgba(15,23,42,0.06)' : 'none',
               }}>
                 {/* Product name */}
                 <div style={{ flex: 1, minWidth: 0 }}>

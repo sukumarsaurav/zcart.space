@@ -76,7 +76,7 @@ export default function TopProductsChart({ data }: Props) {
                 tickLine={false}
                 width={90}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(15,23,42,0.03)' }} />
               <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
                 {chartData.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} fillOpacity={0.85} />

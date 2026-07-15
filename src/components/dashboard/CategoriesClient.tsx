@@ -96,7 +96,7 @@ export default function CategoriesClient({ shopId, categories, countMap }: Categ
                     </td>
                   </tr>
                   {children(cat.id).map((child) => (
-                    <tr key={child.id} style={{ background: 'rgba(255,255,255,0.01)' }}>
+                    <tr key={child.id} style={{ background: 'rgba(15,23,42,0.015)' }}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingLeft: 'var(--space-8)' }}>
                           <span style={{ color: 'var(--text-tertiary)' }}>└</span>
