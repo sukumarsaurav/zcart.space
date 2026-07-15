@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Loader2 } from 'lucide-react'
 import { createCategory, updateCategory } from '@/app/(dashboard)/categories/actions'
 
@@ -24,8 +25,13 @@ interface CategoryModalProps {
 export default function CategoryModal({ shopId, categories, isOpen, onClose, editCategory }: CategoryModalProps) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
+  const [mounted, setMounted] = useState(false)
 
-  if (!isOpen) return null
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!isOpen || !mounted) return null
 
   const roots = categories.filter((c) => !c.parent_id && c.id !== editCategory?.id)
 
@@ -56,7 +62,7 @@ export default function CategoryModal({ shopId, categories, isOpen, onClose, edi
     }
   }
 
-  return (
+  return createPortal(
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -123,6 +129,7 @@ export default function CategoryModal({ shopId, categories, isOpen, onClose, edi
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Camera, AlertTriangle, Zap, ZapOff, FlipHorizontal } from 'lucide-react'
 import {
   BrowserMultiFormatReader,
@@ -23,9 +24,14 @@ export default function BarcodeScannerModal({ onDetected, onClose }: BarcodeScan
   const readerRef = useRef<BrowserMultiFormatReader | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
+  const [mounted, setMounted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [torchOn, setTorchOn] = useState(false)
   const [hasTorch, setHasTorch] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   const [lastScanned, setLastScanned] = useState<string | null>(null)
   const [scanning, setScanning] = useState(true)
 
@@ -144,7 +150,9 @@ export default function BarcodeScannerModal({ onDetected, onClose }: BarcodeScan
 
   // ---------- render ----------
 
-  return (
+  if (!mounted) return null
+
+  return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div
         className="modal"
@@ -344,6 +352,7 @@ export default function BarcodeScannerModal({ onDetected, onClose }: BarcodeScan
           50% { top: 85%; }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   )
 }
