@@ -17,6 +17,7 @@ interface POSProduct {
   barcode: string | null
   sku: string | null
   category_id: string | null
+  track_inventory: boolean
   categories: { name: string } | null
   inventory: { quantity: number }[]
 }
