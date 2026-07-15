@@ -97,7 +97,7 @@ export default function CategoryModal({ shopId, categories, isOpen, onClose, edi
           </div>
           <div>
             <label className="label">URL Slug</label>
-            <input id="cat-slug" name="slug" required className="input" defaultValue={editCategory?.slug} placeholder="e.g., summer-collection" onChange={(e) => { e.target.dataset.manual = 'true' }} data-manual={editCategory ? 'true' : undefined} />
+            <input id="cat-slug" name="slug" required className="input" defaultValue={editCategory?.slug} placeholder="e.g., summer-collection" onChange={(e) => { e.target.dataset.manual = 'true' }} />
           </div>
           <div>
             <label className="label">Cover Image (Optional)</label>

@@ -91,3 +91,27 @@ export async function updateCategory(shopId: string, categoryId: string, formDat
   revalidatePath('/categories')
   return { success: true }
 }
+
+export async function deleteCategory(shopId: string, categoryId: string) {
+  const supabase = await createClient()
+
+  // First, re-parent any children to null (make them top-level)
+  await supabase
+    .from('categories')
+    .update({ parent_id: null })
+    .eq('parent_id', categoryId)
+    .eq('shop_id', shopId)
+
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('id', categoryId)
+    .eq('shop_id', shopId)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/categories')
+  return { success: true }
+}
