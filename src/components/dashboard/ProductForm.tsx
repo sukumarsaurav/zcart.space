@@ -4,7 +4,7 @@ import { useState, useTransition, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import ImageUploader from './ImageUploader'
 import { createClient } from '@/lib/supabase/client'
-import { Save, Loader2, ArrowLeft, Camera } from 'lucide-react'
+import { Save, Loader2, ArrowLeft, Camera, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import slugify from 'slugify'
 import type { GstRate, ProductStatus } from '@/types/database'
@@ -73,6 +73,58 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
     setBarcode(code)
     setScannerOpen(false)
   }, [])
+
+  const handleGenerateSku = () => {
+    if (!name.trim()) {
+      setError('Please enter a product name first to generate SKU')
+      return
+    }
+
+    let catCode = 'GEN'
+    let subCatCode = 'ALL'
+
+    if (categoryId) {
+      const activeCat = categories.find((c) => c.id === categoryId)
+      if (activeCat) {
+        if (activeCat.parent_id) {
+          const parentCat = categories.find((c) => c.id === activeCat.parent_id)
+          catCode = getAcronym(parentCat?.name || 'GEN')
+          subCatCode = getAcronym(activeCat.name)
+        } else {
+          catCode = getAcronym(activeCat.name)
+          subCatCode = 'GEN'
+        }
+      }
+    }
+
+    // Product initials: first letters of up to 4 words
+    const details = name
+      .trim()
+      .split(/\s+/)
+      .map((w) => w[0])
+      .join('')
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .substring(0, 4)
+      .toUpperCase()
+
+    // Add a random 3 digit code/sequence representation
+    const randomSuffix = Math.floor(100 + Math.random() * 900)
+
+    const generatedSku = `${catCode}-${subCatCode}-${details}-${randomSuffix}`
+    setSku(generatedSku)
+  }
+
+  function getAcronym(str: string): string {
+    const clean = str.replace(/[^a-zA-Z0-9\s]/g, '').trim().toUpperCase()
+    const words = clean.split(/\s+/)
+    if (words.length >= 3) {
+      return words.slice(0, 3).map((w) => w[0]).join('')
+    } else if (words.length === 2) {
+      return words[0].substring(0, 2) + words[1][0]
+    } else {
+      return clean.substring(0, 3).padEnd(3, 'X')
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -168,7 +220,26 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
               <div className="form-grid form-grid-2">
                 <div className="input-wrapper">
                   <label htmlFor="product-sku" className="input-label">SKU</label>
-                  <input id="product-sku" className="input" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="e.g. TS-WHT-M" />
+                  <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                    <input id="product-sku" className="input" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="e.g. TS-WHT-M" style={{ flex: 1 }} />
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleGenerateSku}
+                      title="Auto-generate SKU"
+                      aria-label="Auto-generate SKU"
+                      style={{
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--space-1)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <Sparkles size={15} />
+                      <span style={{ fontSize: 'var(--text-xs)' }}>Generate</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="input-wrapper">
                   <label htmlFor="product-barcode" className="input-label">Barcode (EAN/QR)</label>
