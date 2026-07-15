@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import ImageUploader from './ImageUploader'
 import { createClient } from '@/lib/supabase/client'
-import { Save, Loader2, ArrowLeft } from 'lucide-react'
+import { Save, Loader2, ArrowLeft, Camera } from 'lucide-react'
 import Link from 'next/link'
 import slugify from 'slugify'
 import type { GstRate, ProductStatus } from '@/types/database'
+import BarcodeScannerModal from '@/components/shared/BarcodeScannerModal'
 
 interface Category { id: string; name: string; parent_id: string | null }
 
@@ -65,6 +66,13 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
     ? new Date(product.metadata.deal_end_time).toISOString().slice(0, 16)
     : ''
   const [dealEndTime, setDealEndTime] = useState(defaultDealEnd)
+
+  // Barcode scanner
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const handleBarcodeScanned = useCallback((code: string) => {
+    setBarcode(code)
+    setScannerOpen(false)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -127,6 +135,7 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
     : 0
 
   return (
+    <>
     <form onSubmit={handleSubmit}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-6)', alignItems: 'start' }}>
         {/* Left — main fields */}
@@ -163,7 +172,26 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
                 </div>
                 <div className="input-wrapper">
                   <label htmlFor="product-barcode" className="input-label">Barcode (EAN/QR)</label>
-                  <input id="product-barcode" className="input" value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="e.g. 8901234567890" />
+                  <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                    <input id="product-barcode" className="input" value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="e.g. 8901234567890" style={{ flex: 1 }} />
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setScannerOpen(true)}
+                      title="Scan barcode with camera"
+                      aria-label="Scan barcode with camera"
+                      style={{
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--space-1)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <Camera size={15} />
+                      <span style={{ fontSize: 'var(--text-xs)' }}>Scan</span>
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="input-wrapper">
@@ -325,5 +353,14 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
         </div>
       </div>
     </form>
+
+    {/* Barcode scanner modal */}
+    {scannerOpen && (
+      <BarcodeScannerModal
+        onDetected={handleBarcodeScanned}
+        onClose={() => setScannerOpen(false)}
+      />
+    )}
+    </>
   )
 }

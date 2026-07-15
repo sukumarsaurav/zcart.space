@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, type KeyboardEvent } from 'react'
 import { Search, Plus, Minus, Trash2, ShoppingBag, X, User, CreditCard, Banknote, Smartphone, Check, ScanLine } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import BarcodeScannerModal from './BarcodeScannerModal'
+import BarcodeScannerModal from '@/components/shared/BarcodeScannerModal'
 
 interface POSProduct {
   id: string
