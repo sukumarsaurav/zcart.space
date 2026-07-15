@@ -184,11 +184,11 @@ export default function BarcodeScannerModal({ onDetected, onClose }: BarcodeScan
               </button>
             </div>
           ) : (
-            <div style={{ position: 'relative', background: '#000' }}>
+            <div style={{ position: 'relative', background: '#000', overflow: 'hidden', aspectRatio: '4/3', maxHeight: '45vh' }}>
               {/* Video feed */}
               <video
                 ref={videoRef}
-                style={{ width: '100%', display: 'block', minHeight: 260 }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 muted
                 playsInline
                 autoPlay
