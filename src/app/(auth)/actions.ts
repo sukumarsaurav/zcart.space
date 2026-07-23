@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { checkIsSuperAdmin } from '@/lib/auth/admin'
 import { z } from 'zod'
 import slugify from 'slugify'
 
@@ -43,15 +44,24 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: authData, error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   })
 
   if (error) {
-    return { error: error.message === 'Invalid login credentials'
+    const rawMsg = typeof error.message === 'string' ? error.message : ''
+    const formattedMsg = rawMsg === 'Invalid login credentials'
       ? 'Invalid email or password. Please try again.'
-      : error.message
+      : rawMsg || 'Authentication failed. Please check your credentials.'
+
+    return { error: formattedMsg }
+  }
+
+  if (authData?.user) {
+    const isSuper = await checkIsSuperAdmin(authData.user.id)
+    if (isSuper) {
+      redirect('/admin')
     }
   }
 

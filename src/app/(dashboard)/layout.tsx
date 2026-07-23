@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient, getAuthUser } from '@/lib/supabase/server'
+import { checkIsSuperAdmin } from '@/lib/auth/admin'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import type { Metadata } from 'next'
 
@@ -24,6 +25,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .single()
 
   if (!shopUser?.shops) {
+    const isSuper = await checkIsSuperAdmin(user.id)
+    if (isSuper) {
+      redirect('/admin')
+    }
     await supabase.auth.signOut()
     redirect('/login')
   }
