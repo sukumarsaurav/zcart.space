@@ -1224,7 +1224,7 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 900px) {
   .pos-layout {
     grid-template-columns: 1fr;
-    height: calc(100vh - var(--topbar-height) - 48px);
+    height: calc(100vh - var(--topbar-height));
     margin: calc(-1 * var(--space-8)) calc(-1 * var(--space-6));
   }
 
@@ -1233,8 +1233,10 @@ h1, h2, h3, h4, h5, h6 {
     background: var(--surface-elevated);
     border-bottom: 1px solid var(--surface-border);
     height: 48px;
+    box-sizing: border-box;
+    flex-shrink: 0;
   }
-  
+
   .pos-toggle-btn {
     flex: 1;
     display: flex;
@@ -1264,6 +1266,12 @@ h1, h2, h3, h4, h5, h6 {
   
   .pos-product-browser {
     border-right: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .pos-layout {
+    margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-4));
   }
 }
 
