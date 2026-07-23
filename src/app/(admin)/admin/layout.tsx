@@ -1,3 +1,4 @@
+import './admin.css'
 import { requireSuperAdmin } from '@/lib/auth/admin'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import AdminHeader from '@/components/admin/AdminHeader'
@@ -12,14 +13,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const user = await requireSuperAdmin()
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
+    <div className="admin-shell">
       {/* Sidebar */}
       <AdminSidebar />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="admin-main-wrapper">
         <AdminHeader userEmail={user.email ?? 'admin@zcart.space'} />
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+        <main className="admin-content">
           {children}
         </main>
       </div>

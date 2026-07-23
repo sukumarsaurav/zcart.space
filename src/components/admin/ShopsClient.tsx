@@ -7,18 +7,11 @@ import type { Shop, ShopPlan } from '@/types/database'
 import {
   Search,
   Store,
-  Filter,
   CheckCircle2,
   XCircle,
   Edit3,
-  Calendar,
-  ShieldAlert,
   ExternalLink,
-  Info,
-  Check,
-  ChevronDown,
-  Building2,
-  FileText
+  Info
 } from 'lucide-react'
 
 export interface ExtendedShop extends Shop {
@@ -48,7 +41,6 @@ export default function ShopsClient({ shops: initialShops }: ShopsClientProps) {
   // Detail Drawer State
   const [drawerShop, setDrawerShop] = useState<ExtendedShop | null>(null)
 
-  // Filter logic
   const filteredShops = initialShops.filter((shop) => {
     const matchesSearch =
       shop.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -67,7 +59,6 @@ export default function ShopsClient({ shops: initialShops }: ShopsClientProps) {
     return matchesSearch && matchesStatus && matchesPlan
   })
 
-  // Open Edit Modal
   const handleOpenEditModal = (shop: ExtendedShop) => {
     setEditingShop(shop)
     setNewPlan(shop.plan || 'free')
@@ -75,7 +66,6 @@ export default function ShopsClient({ shops: initialShops }: ShopsClientProps) {
     setModalMessage(null)
   }
 
-  // Submit Plan Update
   const handleSavePlan = async () => {
     if (!editingShop) return
     setIsSubmitting(true)
@@ -94,7 +84,6 @@ export default function ShopsClient({ shops: initialShops }: ShopsClientProps) {
     }
   }
 
-  // Toggle Shop Active/Suspended Status
   const handleToggleStatus = async (shop: ExtendedShop) => {
     const nextStatus = !shop.is_active
     const confirmText = nextStatus
@@ -110,56 +99,52 @@ export default function ShopsClient({ shops: initialShops }: ShopsClientProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* Controls Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+      <div className="admin-card" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         {/* Search Input */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="admin-search-wrapper" style={{ width: 320 }}>
+          <Search className="admin-search-icon" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search shop name, slug, owner name..."
-            className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            placeholder="Search shop name, slug, owner..."
+            className="admin-search-input"
           />
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Status Filter */}
-          <div className="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-xl text-xs">
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'inline-flex', padding: '3px', backgroundColor: 'var(--admin-bg-base)', border: '1px solid var(--admin-border-subtle)', borderRadius: '10px' }}>
             <button
               onClick={() => setSelectedStatus('all')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-                selectedStatus === 'all' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`admin-btn ${selectedStatus === 'all' ? 'admin-btn-primary' : 'admin-btn-secondary'}`}
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
             >
               All Status
             </button>
             <button
               onClick={() => setSelectedStatus('active')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-                selectedStatus === 'active' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`admin-btn ${selectedStatus === 'active' ? 'admin-btn-primary' : 'admin-btn-secondary'}`}
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
             >
               Active
             </button>
             <button
               onClick={() => setSelectedStatus('suspended')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-                selectedStatus === 'suspended' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`admin-btn ${selectedStatus === 'suspended' ? 'admin-btn-primary' : 'admin-btn-secondary'}`}
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
             >
               Suspended
             </button>
           </div>
 
-          {/* Plan Filter */}
           <select
             value={selectedPlanFilter}
             onChange={(e) => setSelectedPlanFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="admin-input"
+            style={{ width: 'auto', padding: '0.35rem 0.75rem' }}
           >
             <option value="all">All Plans</option>
             <option value="free">Free</option>
@@ -170,191 +155,146 @@ export default function ShopsClient({ shops: initialShops }: ShopsClientProps) {
         </div>
       </div>
 
-      {/* Shops Data Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-800">
+      {/* Table */}
+      <div className="admin-table-container">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Shop Info</th>
+              <th>Owner Contact</th>
+              <th>Plan</th>
+              <th>Total GMV</th>
+              <th>Orders</th>
+              <th>Status</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredShops.length === 0 ? (
               <tr>
-                <th className="py-3.5 px-4">Shop Info</th>
-                <th className="py-3.5 px-4">Owner Contact</th>
-                <th className="py-3.5 px-4">Subscription Plan</th>
-                <th className="py-3.5 px-4">Total GMV</th>
-                <th className="py-3.5 px-4">Orders</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: 'var(--admin-text-subtle)' }}>
+                  <Store size={32} style={{ margin: '0 auto 0.5rem auto' }} />
+                  <p style={{ margin: 0 }}>No shops found matching filters</p>
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/80">
-              {filteredShops.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500">
-                    <Store className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                    <p className="font-medium text-slate-400">No shops found matching filters</p>
+            ) : (
+              filteredShops.map((shop) => (
+                <tr key={shop.id}>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{
+                        width: 38, height: 38, borderRadius: '10px',
+                        backgroundColor: 'var(--admin-bg-base)', border: '1px solid var(--admin-border-subtle)',
+                        color: 'var(--admin-primary)', fontWeight: 'bold', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem'
+                      }}>
+                        {shop.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span>{shop.name}</span>
+                          <a href={`/store/${shop.slug}`} target="_blank" rel="noreferrer" style={{ color: 'var(--admin-text-subtle)' }}>
+                            <ExternalLink size={12} />
+                          </a>
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--admin-text-subtle)', fontFamily: 'monospace' }}>
+                          zcart.space/store/{shop.slug}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 600 }}>{shop.owner_name || 'N/A'}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)' }}>
+                      {shop.phone || shop.owner_phone || shop.email || 'No contact'}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`admin-badge ${
+                      shop.plan === 'enterprise' ? 'admin-badge-enterprise' :
+                      shop.plan === 'pro' ? 'admin-badge-pro' :
+                      shop.plan === 'starter' ? 'admin-badge-starter' : 'admin-badge-free'
+                    }`}>
+                      {shop.plan || 'free'}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 700, color: '#ffffff' }}>{formatCurrency(shop.total_gmv || 0)}</div>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 600 }}>{shop.total_orders_count || 0}</div>
+                  </td>
+                  <td>
+                    {shop.is_active ? (
+                      <span className="admin-badge admin-badge-active">
+                        <CheckCircle2 size={12} /> Active
+                      </span>
+                    ) : (
+                      <span className="admin-badge admin-badge-suspended">
+                        <XCircle size={12} /> Suspended
+                      </span>
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.35rem' }}>
+                      <button
+                        onClick={() => setDrawerShop(shop)}
+                        className="admin-btn admin-btn-secondary"
+                        style={{ padding: '0.35rem', borderRadius: '8px' }}
+                        title="View Details"
+                      >
+                        <Info size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleOpenEditModal(shop)}
+                        className="admin-btn admin-btn-secondary"
+                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                      >
+                        <Edit3 size={12} /> Edit Plan
+                      </button>
+                      <button
+                        onClick={() => handleToggleStatus(shop)}
+                        className={`admin-btn ${shop.is_active ? 'admin-btn-danger' : 'admin-btn-success'}`}
+                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                      >
+                        {shop.is_active ? 'Suspend' : 'Activate'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              ) : (
-                filteredShops.map((shop) => (
-                  <tr key={shop.id} className="hover:bg-slate-800/40 transition-colors">
-                    {/* Shop Info */}
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-950 to-slate-900 border border-indigo-800/50 text-indigo-300 font-bold flex items-center justify-center text-sm shadow">
-                          {shop.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-bold text-white text-sm flex items-center gap-2">
-                            <span>{shop.name}</span>
-                            <a
-                              href={`/store/${shop.slug}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-slate-500 hover:text-indigo-400"
-                            >
-                              <ExternalLink className="w-3 h-3 text-slate-500" />
-                            </a>
-                          </div>
-                          <div className="text-slate-400 text-[11px] font-mono mt-0.5">
-                            zcart.space/store/{shop.slug}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Owner Contact */}
-                    <td className="py-4 px-4">
-                      <div className="font-semibold text-slate-200">{shop.owner_name || 'N/A'}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
-                        {shop.phone || shop.owner_phone || shop.email || 'No contact'}
-                      </div>
-                    </td>
-
-                    {/* Subscription Plan */}
-                    <td className="py-4 px-4">
-                      <div className="flex flex-col items-start gap-1">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                          shop.plan === 'enterprise'
-                            ? 'bg-amber-950/80 border border-amber-700/50 text-amber-300'
-                            : shop.plan === 'pro'
-                            ? 'bg-purple-950/80 border border-purple-700/50 text-purple-300'
-                            : shop.plan === 'starter'
-                            ? 'bg-indigo-950/80 border border-indigo-700/50 text-indigo-300'
-                            : 'bg-slate-800 text-slate-300 border border-slate-700'
-                        }`}>
-                          {shop.plan || 'free'}
-                        </span>
-                        {shop.plan_expires_at && (
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            Exp: {new Date(shop.plan_expires_at).toLocaleDateString('en-IN')}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Total GMV */}
-                    <td className="py-4 px-4">
-                      <div className="font-bold text-white text-sm">
-                        {formatCurrency(shop.total_gmv || 0)}
-                      </div>
-                    </td>
-
-                    {/* Orders */}
-                    <td className="py-4 px-4">
-                      <span className="font-semibold text-slate-300">
-                        {shop.total_orders_count || 0}
-                      </span>
-                    </td>
-
-                    {/* Status */}
-                    <td className="py-4 px-4">
-                      {shop.is_active ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                          Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-rose-950/80 text-rose-400 border border-rose-800/60">
-                          <XCircle className="w-3.5 h-3.5 text-rose-400" />
-                          Suspended
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Actions */}
-                    <td className="py-4 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => setDrawerShop(shop)}
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                          title="View Details"
-                        >
-                          <Info className="w-4 h-4 text-slate-300" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenEditModal(shop)}
-                          className="px-2.5 py-1.5 rounded-lg bg-indigo-950 border border-indigo-800/60 hover:bg-indigo-900 text-indigo-300 font-medium text-xs flex items-center gap-1 transition-colors"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-indigo-300" />
-                          <span>Edit Plan</span>
-                        </button>
-                        <button
-                          onClick={() => handleToggleStatus(shop)}
-                          className={`px-2.5 py-1.5 rounded-lg font-medium text-xs transition-colors ${
-                            shop.is_active
-                              ? 'bg-rose-950/60 border border-rose-900/60 text-rose-300 hover:bg-rose-900'
-                              : 'bg-emerald-950/60 border border-emerald-900/60 text-emerald-300 hover:bg-emerald-900'
-                          }`}
-                        >
-                          {shop.is_active ? 'Suspend' : 'Activate'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Edit Plan Modal */}
       {editingShop && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="admin-modal-overlay">
+          <div className="admin-modal">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--admin-border-subtle)', paddingBottom: '0.75rem' }}>
               <div>
-                <h3 className="text-lg font-bold text-white">Modify Shop Subscription</h3>
-                <p className="text-xs text-slate-400">{editingShop.name} ({editingShop.slug})</p>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Modify Shop Subscription</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', margin: '0.25rem 0 0 0' }}>{editingShop.name} ({editingShop.slug})</p>
               </div>
-              <button
-                onClick={() => setEditingShop(null)}
-                className="text-slate-400 hover:text-white text-sm"
-              >
-                ✕
-              </button>
+              <button onClick={() => setEditingShop(null)} style={{ background: 'none', border: 'none', color: 'var(--admin-text-muted)', cursor: 'pointer', fontSize: '1.25rem' }}>✕</button>
             </div>
 
             {modalMessage && (
-              <div
-                className={`p-3 rounded-xl text-xs font-medium ${
-                  modalMessage.type === 'success'
-                    ? 'bg-emerald-950 border border-emerald-800 text-emerald-300'
-                    : 'bg-rose-950 border border-rose-800 text-rose-300'
-                }`}
-              >
+              <div className={`admin-badge ${modalMessage.type === 'success' ? 'admin-badge-active' : 'admin-badge-suspended'}`} style={{ padding: '0.65rem 0.85rem', width: '100%', borderRadius: '10px' }}>
                 {modalMessage.text}
               </div>
             )}
 
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '0.35rem' }}>
                   Subscription Tier Plan
                 </label>
                 <select
                   value={newPlan}
                   onChange={(e) => setNewPlan(e.target.value as ShopPlan)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="admin-input"
                 >
                   <option value="free">Free (₹0/month)</option>
                   <option value="starter">Starter (₹499/month)</option>
@@ -364,30 +304,21 @@ export default function ShopsClient({ shops: initialShops }: ShopsClientProps) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '0.35rem' }}>
                   Plan Expiration Date (Optional)
                 </label>
                 <input
                   type="date"
                   value={planExpiry}
                   onChange={(e) => setPlanExpiry(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="admin-input"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-              <button
-                onClick={() => setEditingShop(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSavePlan}
-                disabled={isSubmitting}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-600/30"
-              >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--admin-border-subtle)' }}>
+              <button onClick={() => setEditingShop(null)} className="admin-btn admin-btn-secondary">Cancel</button>
+              <button onClick={handleSavePlan} disabled={isSubmitting} className="admin-btn admin-btn-primary">
                 {isSubmitting ? 'Saving...' : 'Save Plan Changes'}
               </button>
             </div>
@@ -395,75 +326,32 @@ export default function ShopsClient({ shops: initialShops }: ShopsClientProps) {
         </div>
       )}
 
-      {/* Shop Details Drawer Modal */}
+      {/* Drawer */}
       {drawerShop && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex justify-end">
-          <div className="bg-slate-900 border-l border-slate-800 w-full max-w-lg h-full p-6 shadow-2xl overflow-y-auto space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-950 border border-indigo-800/60 text-indigo-300 font-bold flex items-center justify-center text-base">
-                  {drawerShop.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">{drawerShop.name}</h3>
-                  <p className="text-xs text-slate-400 font-mono">{drawerShop.slug}</p>
-                </div>
+        <div className="admin-modal-overlay" style={{ justifyContent: 'flex-end', padding: 0 }}>
+          <div style={{ width: 450, height: '100%', backgroundColor: 'var(--admin-bg-surface)', borderLeft: '1px solid var(--admin-border-accent)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--admin-border-subtle)', paddingBottom: '0.75rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>{drawerShop.name}</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', margin: 0, fontFamily: 'monospace' }}>{drawerShop.slug}</p>
               </div>
-              <button
-                onClick={() => setDrawerShop(null)}
-                className="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800"
-              >
-                ✕
-              </button>
+              <button onClick={() => setDrawerShop(null)} className="admin-btn admin-btn-secondary" style={{ padding: '0.35rem 0.65rem' }}>✕</button>
             </div>
 
-            <div className="space-y-4 text-xs">
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="font-semibold text-slate-300 text-sm border-b border-slate-800 pb-2">
-                  Merchant Account Overview
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-slate-400">
-                  <div>
-                    <span className="block text-[10px] uppercase tracking-wider text-slate-500">Owner Name</span>
-                    <span className="font-medium text-slate-200">{drawerShop.owner_name || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] uppercase tracking-wider text-slate-500">Phone</span>
-                    <span className="font-medium text-slate-200">{drawerShop.phone || drawerShop.owner_phone || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] uppercase tracking-wider text-slate-500">Email</span>
-                    <span className="font-medium text-slate-200">{drawerShop.email || drawerShop.owner_email || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] uppercase tracking-wider text-slate-500">GSTIN</span>
-                    <span className="font-medium text-slate-200">{drawerShop.gstin || 'Not Provided'}</span>
-                  </div>
-                </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.8125rem' }}>
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: 'var(--admin-bg-base)', border: '1px solid var(--admin-border-subtle)' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--admin-text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Merchant Account</h4>
+                <p style={{ margin: '0.25rem 0' }}><strong>Owner:</strong> {drawerShop.owner_name || 'N/A'}</p>
+                <p style={{ margin: '0.25rem 0' }}><strong>Phone:</strong> {drawerShop.phone || drawerShop.owner_phone || 'N/A'}</p>
+                <p style={{ margin: '0.25rem 0' }}><strong>Email:</strong> {drawerShop.email || drawerShop.owner_email || 'N/A'}</p>
+                <p style={{ margin: '0.25rem 0' }}><strong>GSTIN:</strong> {drawerShop.gstin || 'Not Provided'}</p>
               </div>
 
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="font-semibold text-slate-300 text-sm border-b border-slate-800 pb-2">
-                  Storefront & Metrics
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-slate-400">
-                  <div>
-                    <span className="block text-[10px] uppercase tracking-wider text-slate-500">Total GMV</span>
-                    <span className="font-bold text-emerald-400 text-sm">{formatCurrency(drawerShop.total_gmv || 0)}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] uppercase tracking-wider text-slate-500">Completed Orders</span>
-                    <span className="font-bold text-white text-sm">{drawerShop.total_orders_count || 0}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] uppercase tracking-wider text-slate-500">Current Plan</span>
-                    <span className="font-medium text-indigo-300 uppercase">{drawerShop.plan || 'free'}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] uppercase tracking-wider text-slate-500">Custom Domain</span>
-                    <span className="font-medium text-slate-200">{drawerShop.custom_domain || 'None'}</span>
-                  </div>
-                </div>
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: 'var(--admin-bg-base)', border: '1px solid var(--admin-border-subtle)' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--admin-text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Sales Telemetry</h4>
+                <p style={{ margin: '0.25rem 0' }}><strong>Total Sales:</strong> <span style={{ color: 'var(--admin-emerald)', fontWeight: 'bold' }}>{formatCurrency(drawerShop.total_gmv || 0)}</span></p>
+                <p style={{ margin: '0.25rem 0' }}><strong>Total Orders:</strong> {drawerShop.total_orders_count || 0}</p>
+                <p style={{ margin: '0.25rem 0' }}><strong>Plan:</strong> <span style={{ textTransform: 'uppercase' }}>{drawerShop.plan || 'free'}</span></p>
               </div>
             </div>
           </div>
