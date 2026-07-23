@@ -29,9 +29,18 @@ export default async function POSPage() {
     .eq('is_active', true)
     .order('name')
 
+  const { data: shop } = await supabase
+    .from('shops')
+    .select('id, name, upi_id, upi_qr_url')
+    .eq('id', shopUser.shop_id)
+    .single()
+
   return (
     <POSScreen
       shopId={shopUser.shop_id}
+      shopName={shop?.name ?? 'Shop'}
+      upiId={shop?.upi_id ?? null}
+      upiQrUrl={shop?.upi_qr_url ?? null}
       products={(products as any[]) ?? []}
       categories={(categories as any[]) ?? []}
     />

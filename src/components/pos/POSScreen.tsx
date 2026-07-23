@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect, type KeyboardEvent } from 'react'
-import { Search, Plus, Minus, Trash2, ShoppingBag, X, User, CreditCard, Banknote, Smartphone, Check, ScanLine, Ticket, Tag } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingBag, X, User, CreditCard, Banknote, Smartphone, Check, ScanLine, Ticket, Tag, QrCode, Copy } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import BarcodeScannerModal from '@/components/shared/BarcodeScannerModal'
@@ -39,6 +39,9 @@ interface CartItem {
 
 interface POSScreenProps {
   shopId: string
+  shopName?: string
+  upiId?: string | null
+  upiQrUrl?: string | null
   products: POSProduct[]
   categories: { id: string; name: string }[]
 }
@@ -49,7 +52,7 @@ const PAYMENT_METHODS = [
   { id: 'card', label: 'Card', icon: CreditCard },
 ]
 
-export default function POSScreen({ shopId, products, categories }: POSScreenProps) {
+export default function POSScreen({ shopId, shopName = 'Shop', upiId, upiQrUrl, products, categories }: POSScreenProps) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -57,6 +60,7 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
   const [customerPhone, setCustomerPhone] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [amountTendered, setAmountTendered] = useState('')
+  const [copiedUpi, setCopiedUpi] = useState(false)
   const [checkoutMode, setCheckoutMode] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
@@ -853,6 +857,79 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
                     Change: ₹{change.toFixed(2)}
                   </p>
                 )}
+              </div>
+            )}
+
+            {/* UPI QR Display */}
+            {paymentMethod === 'upi' && (
+              <div style={{
+                background: 'var(--surface-elevated)',
+                border: '1px solid var(--surface-border)',
+                borderRadius: 'var(--radius-xl)',
+                padding: 'var(--space-4)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                gap: 'var(--space-3)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-primary-400)', fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+                  <QrCode size={18} />
+                  <span>Scan to Pay ₹{cartTotal.toFixed(0)}</span>
+                </div>
+
+                {/* QR Code Container */}
+                <div style={{
+                  background: '#ffffff',
+                  padding: 10,
+                  borderRadius: 'var(--radius-lg)',
+                  border: '2px solid var(--color-primary-400)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                }}>
+                  {upiId ? (
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=${encodeURIComponent(shopName)}&am=${cartTotal.toFixed(2)}&cu=INR`)}`}
+                      alt="UPI Payment QR Code"
+                      style={{ width: 180, height: 180, display: 'block' }}
+                    />
+                  ) : upiQrUrl ? (
+                    <img
+                      src={upiQrUrl}
+                      alt="Custom UPI QR Code"
+                      style={{ width: 180, height: 180, objectFit: 'contain', display: 'block' }}
+                    />
+                  ) : (
+                    <div style={{ width: 180, height: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b', padding: 12 }}>
+                      <QrCode size={40} style={{ opacity: 0.5, marginBottom: 8 }} />
+                      <p style={{ fontSize: 11, textAlign: 'center', margin: 0 }}>
+                        No UPI ID set. Go to Settings &gt; General to set your UPI ID.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {upiId && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--surface-bg)', padding: '4px 12px', borderRadius: 20, border: '1px solid var(--surface-border)' }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>UPI: {upiId}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(upiId)
+                        setCopiedUpi(true)
+                        setTimeout(() => setCopiedUpi(false), 2000)
+                      }}
+                      className="btn btn-ghost btn-xs"
+                      style={{ padding: '2px 6px', fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      {copiedUpi ? <Check size={12} color="var(--color-success-400)" /> : <Copy size={12} />}
+                      {copiedUpi ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                )}
+
+                <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: 0 }}>
+                  Scan using GPay, PhonePe, Paytm, BHIM, or any UPI app
+                </p>
               </div>
             )}
 

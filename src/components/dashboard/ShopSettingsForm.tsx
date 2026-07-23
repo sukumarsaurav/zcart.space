@@ -49,6 +49,9 @@ export default function ShopSettingsForm({ shop, location }: Props) {
   const [phone, setPhone] = useState(shop.phone ?? '')
   const [email, setEmail] = useState(shop.email ?? '')
   const [gstin, setGstin] = useState(shop.gstin ?? '')
+  const [upiId, setUpiId] = useState(shop.upi_id ?? '')
+  const [upiQrUrl, setUpiQrUrl] = useState(shop.upi_qr_url ?? '')
+  const [upiQrFile, setUpiQrFile] = useState<File | null>(null)
   
   // Theme & Assets
   const [theme, setTheme] = useState<ShopTheme>(() => {
@@ -89,6 +92,7 @@ export default function ShopSettingsForm({ shop, location }: Props) {
       try {
         let finalLogoUrl = logoUrl
         let finalBannerUrl = bannerUrl
+        let finalUpiQrUrl = upiQrUrl
 
         // Upload new images if selected
         if (logoFile) {
@@ -107,12 +111,22 @@ export default function ShopSettingsForm({ shop, location }: Props) {
           finalBannerUrl = publicUrl
         }
 
+        if (upiQrFile) {
+          const path = `${shop.id}/upiqr-${Date.now()}.${upiQrFile.name.split('.').pop()}`
+          const { data, error: uploadErr } = await supabase.storage.from('shop-assets').upload(path, upiQrFile, { upsert: true })
+          if (uploadErr) throw new Error('UPI QR upload failed: ' + uploadErr.message)
+          const { data: { publicUrl } } = supabase.storage.from('shop-assets').getPublicUrl(data.path)
+          finalUpiQrUrl = publicUrl
+        }
+
         // Update DB
         const { error: shopErr } = await supabase.from('shops').update({
           name, 
           phone: phone || null, 
           email: email || null,
           gstin: gstin || null, 
+          upi_id: upiId || null,
+          upi_qr_url: finalUpiQrUrl || null,
           theme,
           metadata: { ...(shop.metadata as any), invoice_template: invoiceTemplate },
           logo_url: finalLogoUrl || null,
@@ -206,6 +220,55 @@ export default function ShopSettingsForm({ shop, location }: Props) {
               <label htmlFor="shop-gstin" className="input-label">GSTIN</label>
               <input id="shop-gstin" className="input" value={gstin} onChange={(e) => setGstin(e.target.value.toUpperCase())} placeholder="22AAAAA0000A1Z5" maxLength={15} />
               <p className="input-helper">Required for GST invoice generation</p>
+            </div>
+
+            {/* UPI & Payment Settings */}
+            <div style={{ marginTop: 'var(--space-6)', paddingTop: 'var(--space-6)', borderTop: '1px solid var(--surface-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                <Smartphone size={18} color="var(--color-primary-400)" />
+                <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>UPI & QR Code Billing Settings (POS)</h3>
+              </div>
+
+              <div className="form-grid form-grid-2">
+                <div className="input-wrapper">
+                  <label htmlFor="shop-upi-id" className="input-label">UPI ID / VPA</label>
+                  <input
+                    id="shop-upi-id"
+                    className="input"
+                    value={upiId}
+                    onChange={(e) => setUpiId(e.target.value)}
+                    placeholder="merchant@upi or 9876543210@paytm"
+                  />
+                  <p className="input-helper">Auto-generates dynamic scannable QR codes in POS for exact bill amounts.</p>
+                </div>
+
+                <div className="input-wrapper">
+                  <label htmlFor="shop-upi-qr" className="input-label">Custom Static QR Image (Optional)</label>
+                  <input
+                    id="shop-upi-qr"
+                    type="file"
+                    accept="image/*"
+                    className="input"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setUpiQrFile(e.target.files[0])
+                        setUpiQrUrl(URL.createObjectURL(e.target.files[0]))
+                      }
+                    }}
+                  />
+                  <p className="input-helper">Upload custom Google Pay / PhonePe / Paytm QR image.</p>
+                </div>
+              </div>
+
+              {upiQrUrl && (
+                <div style={{ marginTop: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                  <img src={upiQrUrl} alt="UPI QR Preview" style={{ width: 80, height: 80, objectFit: 'contain', borderRadius: 8, border: '1px solid var(--surface-border)', background: '#fff', padding: 4 }} />
+                  <div>
+                    <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>Custom QR Image Uploaded</p>
+                    <button type="button" onClick={() => { setUpiQrUrl(''); setUpiQrFile(null) }} className="btn btn-ghost btn-sm btn-danger" style={{ padding: 0, marginTop: 4 }}>Remove Image</button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

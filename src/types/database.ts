@@ -60,6 +60,8 @@ export interface Shop {
   theme: ShopTheme
   logo_url: string | null
   banner_url: string | null
+  upi_id?: string | null
+  upi_qr_url?: string | null
   is_active: boolean
   metadata: Record<string, unknown>
   created_at: string
