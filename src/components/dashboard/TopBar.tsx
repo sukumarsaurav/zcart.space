@@ -6,6 +6,8 @@ import { logoutAction } from '@/app/(auth)/actions'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import ModeSwitcher from '@/components/shared/ModeSwitcher'
+
 interface TopBarProps {
   shopName: string
   shopSlug: string
@@ -67,6 +69,8 @@ export default function TopBar({ shopName, shopSlug, userEmail, onOpenMobile, lo
 
       {/* Right: actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
+        <ModeSwitcher compact />
+
         {/* User menu — avatar shows a red dot when there's a new notification;
             the dropdown itself hosts notifications + the view-store link. */}
         <div ref={dropdownRef} style={{ position: 'relative' }}>

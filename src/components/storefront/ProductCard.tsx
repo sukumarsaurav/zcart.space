@@ -1,10 +1,9 @@
-'use client'
-
 import Link from 'next/link'
 import Image from 'next/image'
 import { ShoppingBag } from 'lucide-react'
 import WishlistButton from './WishlistButton'
 import { calculateDiscount } from '@/lib/storefront/pricing'
+import { formatCurrency } from '@/lib/formatters'
 
 export interface ProductCardData {
   id: string
@@ -36,7 +35,13 @@ export default function ProductCard({ shopSlug, product, wishlisted, rank, minWi
     >
       <div style={{ aspectRatio: '3/4', background: 'var(--surface-elevated)', position: 'relative', overflow: 'hidden' }}>
         {product.images?.[0] ? (
-          <Image src={product.images[0]} alt={product.name} fill sizes="200px" style={{ objectFit: 'cover' }} />
+          <Image
+            src={product.images[0]}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 240px"
+            style={{ objectFit: 'cover' }}
+          />
         ) : (
           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
             <ShoppingBag size={32} />
@@ -82,11 +87,11 @@ export default function ProductCard({ shopSlug, product, wishlisted, rank, minWi
         </p>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
           <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
-            ₹{Number(product.selling_price).toLocaleString('en-IN')}
+            {formatCurrency(product.selling_price)}
           </span>
           {disc > 0 && (
             <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
-              ₹{Number(product.mrp).toLocaleString('en-IN')}
+              {formatCurrency(product.mrp)}
             </span>
           )}
         </div>

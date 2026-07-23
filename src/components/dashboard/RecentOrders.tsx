@@ -1,26 +1,8 @@
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import type { OrderStatus, PaymentStatus, OrderChannel } from '@/types/database'
-import { ExternalLink } from 'lucide-react'
-
-
-const statusBadge: Record<OrderStatus, string> = {
-  pending:    'badge-warning',
-  confirmed:  'badge-info',
-  processing: 'badge-info',
-  shipped:    'badge-primary',
-  delivered:  'badge-success',
-  cancelled:  'badge-neutral',
-  refunded:   'badge-danger',
-}
-
-const paymentBadge: Record<PaymentStatus, string> = {
-  pending:  'badge-warning',
-  paid:     'badge-success',
-  partial:  'badge-warning',
-  failed:   'badge-danger',
-  refunded: 'badge-neutral',
-}
+import { ExternalLink, ShoppingBag } from 'lucide-react'
+import { formatCurrency, getStatusBadgeClass } from '@/lib/formatters'
 
 const channelLabel: Record<OrderChannel, string> = {
   online:      'Online',
@@ -29,7 +11,19 @@ const channelLabel: Record<OrderChannel, string> = {
   marketplace: 'Market',
 }
 
-interface Props { orders: any[] }
+interface RecentOrderRecord {
+  id: string
+  total_amount: number | string
+  status: OrderStatus
+  payment_status: PaymentStatus
+  channel: OrderChannel
+  created_at: string
+  customers?: { name: string } | { name: string }[] | null
+}
+
+interface Props {
+  orders: RecentOrderRecord[]
+}
 
 export default function RecentOrders({ orders }: Props) {
   return (
@@ -43,9 +37,16 @@ export default function RecentOrders({ orders }: Props) {
           View all <ExternalLink size={12} />
         </Link>
       </div>
+
       {orders.length === 0 ? (
-        <div className="empty-state">
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)' }}>No orders yet</p>
+        <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
+          <div className="empty-state-icon" style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-2)' }}>
+            <ShoppingBag size={24} color="var(--text-tertiary)" />
+          </div>
+          <p className="empty-state-title" style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>No orders yet</p>
+          <p className="empty-state-description" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
+            New storefront or POS orders will appear here in real-time.
+          </p>
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
@@ -65,22 +66,22 @@ export default function RecentOrders({ orders }: Props) {
                 <tr key={order.id}>
                   <td>
                     <Link href={`/orders/${order.id}`} style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-                      {order.customers?.name ?? 'Guest'}
+                      {(Array.isArray(order.customers) ? order.customers[0]?.name : order.customers?.name) ?? 'Guest'}
                     </Link>
                   </td>
                   <td>
-                    <span className="badge badge-neutral">{channelLabel[order.channel as OrderChannel]}</span>
+                    <span className="badge badge-neutral">{channelLabel[order.channel as OrderChannel] ?? order.channel}</span>
                   </td>
                   <td style={{ fontWeight: 600 }}>
-                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(order.total_amount))}
+                    {formatCurrency(order.total_amount)}
                   </td>
                   <td>
-                    <span className={`badge badge-dot ${statusBadge[order.status as OrderStatus]}`}>
+                    <span className={`badge badge-dot ${getStatusBadgeClass(order.status)}`}>
                       {order.status}
                     </span>
                   </td>
                   <td>
-                    <span className={`badge ${paymentBadge[order.payment_status as PaymentStatus]}`}>
+                    <span className={`badge ${getStatusBadgeClass(order.payment_status)}`}>
                       {order.payment_status}
                     </span>
                   </td>

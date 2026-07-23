@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   ShoppingBag, LayoutDashboard, Package, Tag, ShoppingCart,
   Warehouse, FileText, Monitor, Settings, ChevronLeft, X,
-  TrendingUp, Users,
+  TrendingUp, Users, Ticket, CreditCard, Receipt, FileCheck, Truck, FileSpreadsheet
 } from 'lucide-react'
 
 interface NavItem {
@@ -29,11 +29,22 @@ const navSections: { section?: string; items: NavItem[] }[] = [
     ],
   },
   {
-    section: 'Sales',
+    section: 'Sales & Billing',
     items: [
       { label: 'Orders', href: '/orders', icon: ShoppingCart },
       { label: 'POS Billing', href: '/pos', icon: Monitor },
       { label: 'Invoices', href: '/invoices', icon: FileText },
+      { label: 'Estimates', href: '/estimates', icon: FileCheck },
+      { label: 'Coupons', href: '/coupons', icon: Ticket },
+    ],
+  },
+  {
+    section: 'Khata & Finance',
+    items: [
+      { label: 'Khata Ledger', href: '/khata', icon: CreditCard },
+      { label: 'Expenses', href: '/expenses', icon: Receipt },
+      { label: 'Purchases', href: '/purchases', icon: Truck },
+      { label: 'GST Reports', href: '/reports/gst', icon: FileSpreadsheet },
     ],
   },
   {

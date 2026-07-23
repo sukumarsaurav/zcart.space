@@ -1,14 +1,16 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, ShoppingBag } from 'lucide-react'
 import type { Metadata } from 'next'
+import { getShopBySlug } from '@/lib/storefront/shop'
+
+export const revalidate = 60
 
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string }> }): Promise<Metadata> {
-  const supabase = await createClient()
   const { shopSlug } = await params
-  const { data: shop } = await supabase.from('shops').select('name').eq('slug', shopSlug).single()
+  const shop = await getShopBySlug(shopSlug)
   return {
     title: `Categories | ${shop?.name ?? 'Shop'}`,
     description: `Browse all categories at ${shop?.name}.`,
@@ -22,17 +24,11 @@ export default async function CategoriesPage({
   params: Promise<{ shopSlug: string }>
   searchParams: Promise<{ selected?: string }>
 }) {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { shopSlug } = await params
   const { selected } = await searchParams
 
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('id, name, slug, theme, logo_url')
-    .eq('slug', shopSlug)
-    .eq('is_active', true)
-    .single()
-
+  const shop = await getShopBySlug(shopSlug)
   if (!shop) notFound()
 
   const { data: categories } = await supabase

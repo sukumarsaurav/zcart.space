@@ -1,21 +1,22 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingBag, Bell, Heart, ChevronRight, ArrowRight, User, Timer } from 'lucide-react'
+import { ShoppingBag, Bell, Heart, ChevronRight, ArrowRight, User, Timer, TrendingUp, Zap } from 'lucide-react'
 import DealCountdown from '@/components/storefront/DealCountdown'
 import ProductCard, { type ProductCardData } from '@/components/storefront/ProductCard'
 import RecentlyViewedSection from '@/components/storefront/RecentlyViewedSection'
 import HeaderSearch from '@/components/storefront/HeaderSearch'
-import { getWishlistedProductIds } from './wishlist-actions'
 import { calculateDiscount } from '@/lib/storefront/pricing'
+import { getShopBySlug } from '@/lib/storefront/shop'
 import type { Metadata } from 'next'
 import type { ShopTheme } from '@/types/database'
 
+export const revalidate = 60
+
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string }> }): Promise<Metadata> {
-  const supabase = await createClient()
   const { shopSlug } = await params
-  const { data: shop } = await supabase.from('shops').select('name').eq('slug', shopSlug).single()
+  const shop = await getShopBySlug(shopSlug)
   return {
     title: shop?.name ?? 'Shop',
     description: `Welcome to ${shop?.name}. Browse and shop our products online.`,
@@ -23,27 +24,24 @@ export async function generateMetadata({ params }: { params: Promise<{ shopSlug:
 }
 
 export default async function StorefrontHomePage({ params }: { params: Promise<{ shopSlug: string }> }) {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { shopSlug } = await params
 
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('id, name, slug, theme, logo_url, banner_url, phone, email, is_active')
-    .eq('slug', shopSlug)
-    .eq('is_active', true)
-    .single()
+  const shop = await getShopBySlug(shopSlug)
 
   if (!shop) notFound()
 
   const theme = shop.theme as ShopTheme
   const pc = theme.primary_color ?? '#6366f1'
 
-  // Fetch top-level categories, all products, and this visitor's wishlist
-  const [{ data: categories }, { data: allProducts }, wishlistedIds] = await Promise.all([
+  // Fetch top-level categories and products (limited to 50) using cookie-less public client for Edge CDN caching
+  const [{ data: categories }, { data: allProducts }] = await Promise.all([
     supabase.from('categories').select('id, name, slug, image_url').eq('shop_id', shop.id).eq('is_active', true).is('parent_id', null).order('sort_order').limit(10),
-    supabase.from('products').select('id, name, slug, images, selling_price, mrp, metadata, is_featured, category_id').eq('shop_id', shop.id).eq('status', 'active'),
-    getWishlistedProductIds(shopSlug),
+    supabase.from('products').select('id, name, slug, images, selling_price, mrp, metadata, is_featured, category_id').eq('shop_id', shop.id).eq('status', 'active').limit(50),
   ])
+  const wishlistedIds = new Set<string>()
+
+
 
   const productsList = allProducts || []
 
@@ -302,7 +300,7 @@ export default async function StorefrontHomePage({ params }: { params: Promise<{
           <section style={{ padding: '0 16px', marginBottom: '32px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                📈 Trending Now
+                <TrendingUp size={20} color="var(--color-primary-400)" /> Trending Now
               </h2>
               <Link href={`/${shopSlug}/products`} style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
                 See all <ChevronRight size={16} />
@@ -365,7 +363,7 @@ export default async function StorefrontHomePage({ params }: { params: Promise<{
         <section style={{ padding: '0 16px', marginBottom: '32px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              ⚡ Flash Sale
+              <Zap size={20} color="var(--color-warning-400)" /> Flash Sale
             </h2>
             <Link href={`/${shopSlug}/products`} style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
               View all <ChevronRight size={16} />

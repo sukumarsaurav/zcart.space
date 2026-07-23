@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import StatCard from '@/components/dashboard/StatCard'
 import dynamic from 'next/dynamic'
@@ -16,10 +16,10 @@ import { format } from 'date-fns'
 export const metadata: Metadata = { title: 'Dashboard' }
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
+
+  const supabase = await createClient()
 
   // Get shop
   const { data: shopUser } = await supabase

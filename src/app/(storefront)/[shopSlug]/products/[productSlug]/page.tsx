@@ -1,4 +1,4 @@
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createPublicClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -9,12 +9,14 @@ import ProductPurchaseControls from '@/components/storefront/ProductPurchaseCont
 import ProductImageGallery from '@/components/storefront/ProductImageGallery'
 import RecentlyViewedTracker from '@/components/storefront/RecentlyViewedTracker'
 import ReviewForm from '@/components/storefront/ReviewForm'
-import { getWishlistedProductIds } from '../../wishlist-actions'
 import { calculateDiscount } from '@/lib/storefront/pricing'
+import { getShopBySlug } from '@/lib/storefront/shop'
 import { formatDistanceToNow } from 'date-fns'
 
+export const revalidate = 60
+
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string; productSlug: string }> }): Promise<Metadata> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { productSlug } = await params
   const { data: product } = await supabase.from('products').select('name, description').eq('slug', productSlug).single()
   return {
@@ -28,10 +30,10 @@ export default async function ProductDetailPage({
 }: {
   params: Promise<{ shopSlug: string; productSlug: string }>
 }) {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { shopSlug, productSlug } = await params
 
-  const { data: shop } = await supabase.from('shops').select('id, name, slug, theme').eq('slug', shopSlug).eq('is_active', true).single()
+  const shop = await getShopBySlug(shopSlug)
   if (!shop) notFound()
 
   const theme = shop.theme as ShopTheme
@@ -63,8 +65,7 @@ export default async function ProductDetailPage({
     .eq('category_id', product.category_id ?? '')
     .limit(4)
 
-  const wishlistedIds = await getWishlistedProductIds(shopSlug)
-  const isWishlisted = wishlistedIds.has(product.id)
+  const isWishlisted = false
 
   // Service client: reviewer name is intentionally public alongside a published
   // review, but the anon client's RLS on `customers` only allows reading your

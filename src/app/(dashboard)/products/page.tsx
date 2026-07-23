@@ -42,7 +42,7 @@ export default async function ProductsPage({
 
   let query = supabase
     .from('products')
-    .select('id, name, slug, images, selling_price, mrp, status, sku, category_id, created_at, categories(name), inventory(quantity)', { count: 'exact' })
+    .select('id, name, slug, images, selling_price, mrp, min_selling_price, status, sku, category_id, created_at, categories(name), inventory(quantity)', { count: 'exact' })
     .eq('shop_id', shopUser.shop_id)
     .order('created_at', { ascending: false })
     .range(from, to)
@@ -119,7 +119,7 @@ export default async function ProductsPage({
         </div>
       ) : (
         <>
-          <div className="table-wrapper">
+          <div className="table-wrapper table-responsive-cards">
             <table className="table">
               <thead>
                 <tr>
@@ -176,6 +176,11 @@ export default async function ProductsPage({
                       </td>
                       <td>
                         <p style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{fmtINR(product.selling_price)}</p>
+                        {product.min_selling_price !== null && (
+                          <p style={{ fontSize: '11px', color: 'var(--color-warning-400)', margin: 0 }}>
+                            Min: {fmtINR(product.min_selling_price)}
+                          </p>
+                        )}
                         {product.mrp > product.selling_price && (
                           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
                             {fmtINR(product.mrp)}

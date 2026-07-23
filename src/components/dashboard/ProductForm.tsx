@@ -26,10 +26,13 @@ interface ProductFormProps {
     mrp: number
     selling_price: number
     cost_price: number | null
+    min_selling_price: number | null
     hsn_code: string | null
     gst_rate: GstRate
     tax_inclusive: boolean
     track_inventory: boolean
+    has_batch?: boolean
+    has_expiry?: boolean
     category_id: string | null
     status: ProductStatus
     metadata?: any
@@ -53,10 +56,13 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
   const [mrp, setMrp] = useState(String(product?.mrp ?? ''))
   const [sellingPrice, setSellingPrice] = useState(String(product?.selling_price ?? ''))
   const [costPrice, setCostPrice] = useState(String(product?.cost_price ?? ''))
+  const [minSellingPrice, setMinSellingPrice] = useState(product?.min_selling_price ? String(product.min_selling_price) : '')
   const [hsnCode, setHsnCode] = useState(product?.hsn_code ?? '')
   const [gstRate, setGstRate] = useState<GstRate>(product?.gst_rate ?? '18')
   const [taxInclusive, setTaxInclusive] = useState(product?.tax_inclusive ?? true)
   const [trackInventory, setTrackInventory] = useState(product?.track_inventory ?? true)
+  const [hasBatch, setHasBatch] = useState(product?.has_batch ?? false)
+  const [hasExpiry, setHasExpiry] = useState(product?.has_expiry ?? false)
   const [categoryId, setCategoryId] = useState(product?.category_id ?? '')
   const [status, setStatus] = useState<ProductStatus>(product?.status ?? 'active')
   const [isDealOfDay, setIsDealOfDay] = useState(product?.metadata?.is_deal_of_the_day === true)
@@ -150,10 +156,13 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
         mrp: Number(mrp),
         selling_price: Number(sellingPrice),
         cost_price: costPrice ? Number(costPrice) : null,
+        min_selling_price: minSellingPrice ? Number(minSellingPrice) : null,
         hsn_code: hsnCode || null,
         gst_rate: gstRate,
         tax_inclusive: taxInclusive,
         track_inventory: trackInventory,
+        has_batch: hasBatch,
+        has_expiry: hasExpiry,
         category_id: categoryId || null,
         status,
         metadata: {
@@ -286,7 +295,7 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
           <div className="card">
             <div className="card-header"><h2 style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>Pricing</h2></div>
             <div className="card-body form-section">
-              <div className="form-grid form-grid-3">
+              <div className="form-grid form-grid-2">
                 <div className="input-wrapper">
                   <label htmlFor="product-mrp" className="input-label">MRP (₹) *</label>
                   <input id="product-mrp" className="input" type="number" min="0" step="0.01" value={mrp} onChange={(e) => setMrp(e.target.value)} placeholder="0.00" required />
@@ -302,6 +311,11 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
                   <label htmlFor="product-cost" className="input-label">Cost Price (₹)</label>
                   <input id="product-cost" className="input" type="number" min="0" step="0.01" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} placeholder="0.00" />
                   <p className="input-helper">Used for margin reports</p>
+                </div>
+                <div className="input-wrapper">
+                  <label htmlFor="product-min-price" className="input-label">Min Selling Price (₹)</label>
+                  <input id="product-min-price" className="input" type="number" min="0" step="0.01" value={minSellingPrice} onChange={(e) => setMinSellingPrice(e.target.value)} placeholder="0.00" />
+                  <p className="input-helper">Floor price (staff cannot sell below this in POS)</p>
                 </div>
               </div>
             </div>
@@ -382,14 +396,25 @@ export default function ProductForm({ shopId, categories, product }: ProductForm
 
           {/* Inventory */}
           <div className="card">
-            <div className="card-header"><h2 style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>Inventory</h2></div>
-            <div className="card-body">
+            <div className="card-header"><h2 style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>Inventory & Batches</h2></div>
+            <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontSize: 'var(--text-sm)' }}>
                 <input type="checkbox" checked={trackInventory} onChange={(e) => setTrackInventory(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--color-primary-500)' }} />
                 <span>Track inventory for this product</span>
               </label>
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginTop: 'var(--space-2)' }}>
-                Stock can be set from the Inventory page after creating the product.
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontSize: 'var(--text-sm)' }}>
+                <input type="checkbox" checked={hasBatch} onChange={(e) => setHasBatch(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--color-primary-500)' }} />
+                <span>Enable Batch / Lot Tracking (Multi-price stock)</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontSize: 'var(--text-sm)' }}>
+                <input type="checkbox" checked={hasExpiry} onChange={(e) => setHasExpiry(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--color-primary-500)' }} />
+                <span>Enable Expiry Date Tracking</span>
+              </label>
+
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginTop: 'var(--space-1)' }}>
+                Stock batches and multi-price inventory can be managed from the Inventory dashboard.
               </p>
             </div>
           </div>

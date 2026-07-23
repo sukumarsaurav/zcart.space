@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -6,11 +6,13 @@ import { ArrowLeft, Flame, Tag } from 'lucide-react'
 import type { Metadata } from 'next'
 import DealCountdown from '@/components/storefront/DealCountdown'
 import { calculateDiscount } from '@/lib/storefront/pricing'
+import { getShopBySlug } from '@/lib/storefront/shop'
+
+export const revalidate = 60
 
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string }> }): Promise<Metadata> {
-  const supabase = await createClient()
   const { shopSlug } = await params
-  const { data: shop } = await supabase.from('shops').select('name').eq('slug', shopSlug).single()
+  const shop = await getShopBySlug(shopSlug)
   return {
     title: `Sale & Deals | ${shop?.name ?? 'Shop'}`,
     description: `Shop the latest deals and discounts at ${shop?.name}.`,
@@ -18,16 +20,10 @@ export async function generateMetadata({ params }: { params: Promise<{ shopSlug:
 }
 
 export default async function SalePage({ params }: { params: Promise<{ shopSlug: string }> }) {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { shopSlug } = await params
 
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('id, name, slug, theme, is_active')
-    .eq('slug', shopSlug)
-    .eq('is_active', true)
-    .single()
-
+  const shop = await getShopBySlug(shopSlug)
   if (!shop) notFound()
 
   // Fetch all discounted products (where MRP > selling_price)

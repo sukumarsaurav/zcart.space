@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import {
-  Package, Receipt, Shield, Globe, ArrowRight,
+  Package, Receipt, Shield, Globe, ArrowRight, Star,
   Store, MessageCircle, Building2, UserPlus, Palette, Rocket,
   Barcode, Bot, FileCheck2, Wallet, Headphones, RefreshCw, CloudCog, MapPinned,
+  Sparkles, CheckCircle2, Play
 } from 'lucide-react'
 import type { Metadata } from 'next'
 import MarketingNav from '@/components/marketing/MarketingNav'
@@ -11,123 +12,145 @@ import PricingSection from '@/components/marketing/PricingSection'
 import FaqAccordion from '@/components/marketing/FaqAccordion'
 import AlternatingFeature from '@/components/marketing/AlternatingFeature'
 import PersonaStrip from '@/components/marketing/PersonaStrip'
+import TrustStatsBand from '@/components/marketing/TrustStatsBand'
+import InteractiveFeatureShowcase from '@/components/marketing/InteractiveFeatureShowcase'
+import CategorySolutions from '@/components/marketing/CategorySolutions'
+import MerchantTestimonials from '@/components/marketing/MerchantTestimonials'
+import StickyFloatingCta from '@/components/marketing/StickyFloatingCta'
 import DashboardMockup from '@/components/marketing/mockups/DashboardMockup'
 import InvoiceMockup from '@/components/marketing/mockups/InvoiceMockup'
 import InventoryMockup from '@/components/marketing/mockups/InventoryMockup'
 import StorefrontMockup from '@/components/marketing/mockups/StorefrontMockup'
-import { getPlansWithFeatures } from '@/lib/plans'
+import FeatureComparisonTable from '@/components/marketing/FeatureComparisonTable'
+import { getPlansWithFeatures, getFullPricingData } from '@/lib/plans'
+
+export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'zCart — The all-in-one platform for local shops',
+  title: 'zCart — The All-in-One Operating System for Indian Local Shops',
+  description: 'Online store, speed POS billing, unified inventory ledger, and GST invoicing — built specifically for India\'s retail and wholesale merchants.',
 }
 
 const steps = [
-  { icon: UserPlus, title: 'Create your shop', description: 'Sign up free and set up your shop profile — name, GSTIN, and location — in under 2 minutes.' },
-  { icon: Palette, title: 'Add products & pick a theme', description: 'Upload your catalogue and choose a storefront theme. No design or coding needed.' },
-  { icon: Rocket, title: 'Start selling everywhere', description: 'Go live online, bill at the counter with POS, and take orders over WhatsApp — all from one dashboard.' },
+  { icon: UserPlus, title: 'Create your free shop', description: 'Sign up in 60 seconds. Input your shop name, location, and GSTIN — no technical setup or developer required.' },
+  { icon: Palette, title: 'Add products & pick a theme', description: 'Upload your product catalog or import via Excel/POS. Choose a mobile-first storefront theme.' },
+  { icon: Rocket, title: 'Sell online, counter & WhatsApp', description: 'Bill customers at the counter, accept online orders, and log WhatsApp sales — all drawing from one live stock pool.' },
 ]
 
 const deepDives = [
   {
     icon: Receipt,
-    eyebrow: 'Billing & compliance',
-    title: 'GST invoicing that just works',
-    description: 'Every sale — online or at the counter — generates a GST-compliant PDF invoice automatically, with correct HSN codes and CGST/SGST/IGST breakup, numbered without gaps.',
-    bullets: ['Auto-numbered invoices per financial year', 'HSN codes & tax breakup built in', 'Downloadable PDF, sent to customers by email', 'GST summary reports for filing'],
+    eyebrow: 'Billing & Compliance',
+    title: '100% Tax-Compliant GST Invoicing',
+    description: 'Every sale — counter POS, online storefront, or WhatsApp order — generates a gap-free GST PDF invoice instantly with exact HSN tax codes.',
+    bullets: ['Auto-numbered financial year series', 'HSN & SAC code catalog library', 'Instant PDF share via WhatsApp & Email', 'GSTR-1 & GSTR-3B tax export reports'],
     visual: <InvoiceMockup />,
   },
   {
     icon: Package,
-    eyebrow: 'Inventory',
-    title: 'One stock pool, every channel',
-    description: 'Online orders, POS sales, and WhatsApp orders all draw from the same live inventory ledger — so you never oversell, and low-stock alerts fire before you run out.',
-    bullets: ['Real-time stock sync across channels', 'Multi-location stock tracking', 'Low-stock alerts with reorder points', 'Immutable inventory ledger for full audit trail'],
+    eyebrow: 'Inventory Management',
+    title: 'One Live Stock Pool Across Every Channel',
+    description: 'Counter sales, online storefront orders, and WhatsApp sales deduct from the same central inventory ledger in real-time.',
+    bullets: ['Real-time stock ledger synchronization', 'Batch number & expiry date tracking', 'Low-stock warnings with reorder thresholds', 'Multi-godown & shop location tracking'],
     imageOnLeft: true,
     visual: <InventoryMockup />,
   },
   {
     icon: Globe,
-    eyebrow: 'Storefront & sales',
-    title: 'A real online store, live in minutes',
-    description: 'A branded, mobile-first storefront with premium themes, product variants, and sale pages — plus counter billing on any tablet, so your shop sells everywhere your customers are.',
-    bullets: ['Mobile-first storefront themes', 'Barcode-ready POS billing', 'Product size/colour variants', 'Custom domain support'],
+    eyebrow: 'Digital Storefront',
+    title: 'Your Branded E-Commerce Storefront in Minutes',
+    description: 'Give your local shop a mobile-first online presence with custom themes, product variants, and direct WhatsApp checkout.',
+    bullets: ['Mobile-optimized storefront themes', 'Custom domain support (yourname.com)', 'Product size, colour & attribute variants', 'Seamless online payment gateway checkout'],
     visual: <StorefrontMockup />,
   },
 ]
 
-const highlights = [
-  { icon: Barcode, title: 'Barcode-ready POS', description: 'Scan and bill in seconds at the counter, on any tablet or laptop.' },
-  { icon: Bot, title: 'Smart low-stock alerts', description: 'Get flagged before you run out, based on per-product reorder points.' },
-  { icon: FileCheck2, title: 'GST-compliant by default', description: 'Every invoice is generated correctly, automatically, every time.' },
-  { icon: Wallet, title: 'Flexible payments', description: 'Accept UPI, cards, and Cash on Delivery — or run a digital khata.' },
-]
-
-const channels = [
-  { icon: Globe, title: 'Online storefront', description: 'A branded, mobile-first storefront with your own theme and (optionally) custom domain.' },
-  { icon: Store, title: 'In-store POS', description: 'Fast counter billing on any tablet or laptop, sharing the same product catalogue and stock.' },
-  { icon: MessageCircle, title: 'WhatsApp orders', description: 'Take and log orders that come in over WhatsApp, tracked in the same order pipeline.' },
-  { icon: Building2, title: 'Marketplace-ready', description: 'One inventory pool so you never oversell across channels.' },
-]
-
 const whyChoose = [
-  { icon: Headphones, title: 'Real support', description: 'Reach a human when something breaks, not a bot loop.' },
-  { icon: RefreshCw, title: 'Shipped continuously', description: 'New features roll out regularly, no separate upgrade needed.' },
-  { icon: CloudCog, title: 'Real-time sync', description: 'Every channel reads from the same live data, always current.' },
-  { icon: MapPinned, title: 'Access anywhere', description: 'It\'s a web app — run your shop from any device, any location.' },
+  { icon: Headphones, title: 'Dedicated Human Support', description: 'Reach our team on WhatsApp or phone whenever you need guidance.' },
+  { icon: RefreshCw, title: 'Continuous Feature Updates', description: 'New enhancements roll out automatically at zero extra cost.' },
+  { icon: CloudCog, title: 'Real-Time Sync', description: 'Zero lag between counter POS billing and online storefront inventory.' },
+  { icon: MapPinned, title: 'Access from Any Device', description: 'Cloud web application — access your shop dashboard from mobile, tablet, or PC.' },
 ]
 
 const faqs = [
-  { question: 'Do I need an existing website to use zCart?', answer: 'No. zCart gives you a complete storefront, so you can start selling online without any prior website or technical setup.' },
-  { question: 'Can I switch plans later?', answer: 'Yes, you can upgrade or downgrade your plan at any time from your dashboard settings. Changes apply from your next billing cycle.' },
-  { question: 'Is my shop’s data isolated from other shops on the platform?', answer: 'Yes. Every shop’s data — products, orders, customers — is isolated at the database level, so no other shop on the platform can ever read or modify your data.' },
-  { question: 'What payment methods can my customers use at checkout?', answer: 'Customers can pay online via UPI, cards, and other methods through your configured payment gateway, or choose Cash on Delivery.' },
-  { question: 'Is there a setup fee?', answer: 'No setup fees. The Free plan has no cost at all, and paid plans are billed monthly or yearly with no hidden charges.' },
+  { question: 'Do I need technical skills or a developer to set up zCart?', answer: 'No! zCart is designed for local shop owners. You can launch your shop, add products, and start billing in under 5 minutes without any technical knowledge.' },
+  { question: 'Does zCart support barcode scanners and thermal printers?', answer: 'Yes. zCart POS works with any standard USB/Bluetooth barcode scanner and thermal receipt printer on laptop, tablet, or desktop.' },
+  { question: 'How does zCart keep my shop\'s inventory in sync?', answer: 'zCart uses a single live stock database. When an item is sold at the counter POS, online storefront, or via WhatsApp, the inventory count decreases everywhere instantly.' },
+  { question: 'Can I issue GST tax invoices and export GSTR reports?', answer: 'Yes! zCart handles CGST, SGST, and IGST calculations automatically, inserts HSN codes, and exports clean tax reports for your accountant or CA.' },
+  { question: 'Is there any commitment or setup fee?', answer: 'None at all. The Free plan is 100% free forever with no credit card required. Upgrade to paid plans anytime as your shop grows.' },
 ]
 
 export default async function LandingPage() {
-  const plans = await getPlansWithFeatures()
+  const [plans, fullPricing] = await Promise.all([
+    getPlansWithFeatures(),
+    getFullPricingData(),
+  ])
   const teaserPlans = plans.filter((p) => p.key !== 'enterprise')
 
   return (
     <div data-marketing-theme="royal" className="mkt-page">
       <MarketingNav />
 
-      {/* Hero — copy beside the actual merchant dashboard */}
-      <section className="mkt-section">
+      {/* Hero Section */}
+      <section className="mkt-section" style={{ paddingTop: 'var(--space-8)', paddingBottom: 'var(--space-12)' }}>
         <div className="mkt-split mkt-split--hero">
           <div>
-            <span className="badge badge-primary badge-dot mkt-hero-badge">
-              Built for Indian local businesses
-            </span>
-            <h1 className="mkt-hero-title">
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: 'var(--radius-full)', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', marginBottom: '16px' }}>
+              <Sparkles size={14} color="var(--color-primary-400)" />
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-primary-400)' }}>
+                4.9★ Rated Platform for Indian Merchants
+              </span>
+            </div>
+
+            <h1 className="mkt-hero-title" style={{ fontSize: 'var(--text-4xl)', fontWeight: 900, lineHeight: 1.15, marginBottom: '16px' }}>
               Run your entire shop<br />
               <span className="gradient-text">from one place</span>
             </h1>
-            <p className="mkt-hero-sub">
-              Online store, POS billing, unified inventory, and GST invoicing — all in one platform built for India&apos;s local shops.
+
+            <p className="mkt-hero-sub" style={{ fontSize: 'var(--text-lg)', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.6 }}>
+              Online store, speed POS billing, live inventory ledger, and GST invoicing — all in one platform built for India&apos;s local retail & wholesale merchants.
             </p>
-            <div className="mkt-cta-row">
-              <Link href="/signup" className="btn btn-primary btn-lg">
-                Start for free <ArrowRight size={18} />
+
+            <div className="mkt-cta-row" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+              <Link href="/signup" className="btn btn-primary btn-lg" style={{ borderRadius: 'var(--radius-full)', padding: '14px 28px', gap: '8px', fontWeight: 700 }}>
+                Start For Free <ArrowRight size={18} />
               </Link>
-              <Link href="/pricing" className="btn btn-secondary btn-lg">See pricing</Link>
+              <Link href="/demo" className="btn btn-secondary btn-lg" style={{ borderRadius: 'var(--radius-full)', padding: '14px 24px', gap: '8px' }}>
+                <Play size={16} fill="currentColor" /> Try Live Storefront Demo
+              </Link>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle2 size={14} color="var(--color-success-500)" /> No credit card needed</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle2 size={14} color="var(--color-success-500)" /> Free plan available</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle2 size={14} color="var(--color-success-500)" /> Setup in 2 mins</span>
             </div>
           </div>
+
           <DashboardMockup />
         </div>
       </section>
 
-      {/* Persona strip */}
+      {/* Trust & Social Proof Metrics Band */}
+      <TrustStatsBand />
+
+      {/* Interactive Feature Showcase */}
+      <InteractiveFeatureShowcase />
+
+      {/* Tailored Category Solutions */}
+      <CategorySolutions />
+
+      {/* Persona Strip */}
       <section className="mkt-persona-band">
         <PersonaStrip />
       </section>
 
-      {/* How it works */}
+      {/* 3-Step Onboarding */}
       <section className="mkt-section">
-        <div className="mkt-section-head">
-          <span className="mkt-eyebrow">Getting started</span>
-          <h2 className="mkt-h2">How it works</h2>
-          <p className="mkt-lead">Live in three steps, no developer required.</p>
+        <div className="mkt-section-head" style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
+          <span className="mkt-eyebrow" style={{ color: 'var(--color-primary-500)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Simple Onboarding</span>
+          <h2 className="mkt-h2" style={{ fontSize: 'var(--text-3xl)', fontWeight: 800 }}>How it works</h2>
+          <p className="mkt-lead" style={{ color: 'var(--text-secondary)' }}>Live in three steps. Zero developer or design work required.</p>
         </div>
         <div className="mkt-grid-loose">
           {steps.map((s, i) => (
@@ -141,55 +164,17 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Deep-dive alternating feature sections */}
+      {/* Deep-Dive Alternating Features */}
       <section id="features" className="mkt-section mkt-deep-dives">
         {deepDives.map((d) => (
           <AlternatingFeature key={d.title} {...d} />
         ))}
       </section>
 
-      {/* Highlights grid */}
-      <section className="mkt-section">
-        <div className="mkt-section-head">
-          <h2 className="mkt-h2">Built for the counter and the checkout</h2>
-          <p className="mkt-lead">The daily details that keep a shop running smoothly.</p>
-        </div>
-        <div className="mkt-grid-cards">
-          {highlights.map((h) => (
-            <div key={h.title} className="card card-hover mkt-feature-card">
-              <div className="mkt-icon-chip mkt-icon-chip--accent">
-                <h.icon size={20} />
-              </div>
-              <h3>{h.title}</h3>
-              <p>{h.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Channels */}
+      {/* Why Shop Owners Choose Us */}
       <section className="mkt-section mkt-section--tight">
-        <div className="mkt-section-head">
-          <h2 className="mkt-h2">Sell wherever your customers are</h2>
-          <p className="mkt-lead">One catalogue and one stock pool, across every channel.</p>
-        </div>
-        <div className="mkt-grid-cards">
-          {channels.map((c) => (
-            <div key={c.title} className="card card-hover mkt-feature-card">
-              <div className="mkt-icon-chip mkt-icon-chip--primary">
-                <c.icon size={20} />
-              </div>
-              <h3>{c.title}</h3>
-              <p>{c.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Why choose us */}
-      <section className="mkt-section mkt-section--tight">
-        <div className="mkt-section-head">
-          <h2 className="mkt-h2">Why shop owners choose zCart</h2>
+        <div className="mkt-section-head" style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
+          <h2 className="mkt-h2" style={{ fontSize: 'var(--text-3xl)', fontWeight: 800 }}>Why merchants choose zCart over legacy desktop apps</h2>
         </div>
         <div className="mkt-grid-loose">
           {whyChoose.map((w) => (
@@ -204,44 +189,72 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing teaser */}
+      {/* Merchant Testimonials */}
+      <MerchantTestimonials />
+
+      {/* Feature Comparison Matrix */}
+      {fullPricing.plans.length > 0 && fullPricing.features.length > 0 && (
+        <section className="mkt-section mkt-section--tight" style={{ background: 'var(--surface-subtle)', padding: 'var(--space-12) 0', borderTop: '1px solid var(--surface-border)', borderBottom: '1px solid var(--surface-border)' }}>
+          <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
+            <div className="mkt-section-head" style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
+              <span style={{ color: 'var(--color-primary-500)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 'var(--text-xs)' }}>
+                Feature Breakdown
+              </span>
+              <h2 className="mkt-h2" style={{ fontSize: 'var(--text-3xl)', fontWeight: 800, margin: '8px 0 12px' }}>
+                Compare Shopz features across plans
+              </h2>
+              <p className="mkt-lead" style={{ color: 'var(--text-secondary)' }}>
+                Everything included with complete transparency.
+              </p>
+            </div>
+            <FeatureComparisonTable plans={fullPricing.plans} features={fullPricing.features} matrix={fullPricing.matrix} />
+          </div>
+        </section>
+      )}
+
+      {/* Pricing Teaser Section */}
       <section className="mkt-section">
-        <div className="mkt-section-head">
-          <h2 className="mkt-h2">Simple pricing</h2>
-          <p className="mkt-lead">Start free. Upgrade when you grow.</p>
+        <div className="mkt-section-head" style={{ textAlign: 'center' }}>
+          <h2 className="mkt-h2">Transparent & predictable pricing</h2>
+          <p className="mkt-lead">Start free. Upgrade as your shop grows.</p>
         </div>
         {teaserPlans.length > 0 && <PricingSection plans={teaserPlans} />}
-        <div className="mkt-section-foot">
+        <div className="mkt-section-foot" style={{ textAlign: 'center', marginTop: 'var(--space-4)' }}>
           <Link href="/pricing" className="btn btn-ghost">
             Compare all plans & features <ArrowRight size={16} />
           </Link>
         </div>
       </section>
 
-      {/* FAQ */}
+      {/* FAQ Accordion */}
       <section className="mkt-section mkt-section--tight">
-        <div className="mkt-section-head">
+        <div className="mkt-section-head" style={{ textAlign: 'center' }}>
           <h2 className="mkt-h2">Frequently asked questions</h2>
         </div>
         <FaqAccordion items={faqs} />
       </section>
 
-      {/* CTA */}
+      {/* Final Conversion CTA Banner */}
       <section className="mkt-section">
-        <div className="mkt-cta-panel">
-          <div className="mkt-cta-kicker">
+        <div className="mkt-cta-panel" style={{ textAlign: 'center', borderRadius: 'var(--radius-2xl)', padding: 'var(--space-12) var(--space-6)' }}>
+          <div className="mkt-cta-kicker" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Shield size={20} />
-            <span>Get started in 5 minutes</span>
+            <span>Get started in under 5 minutes</span>
           </div>
-          <h2>Ready to modernize your shop?</h2>
-          <p>Join local shop owners already running their business on zCart.</p>
-          <Link href="/signup" className="btn btn-primary btn-lg">
-            Create your free shop <ArrowRight size={18} />
+          <h2 style={{ fontSize: 'var(--text-3xl)', fontWeight: 800, margin: '0 0 12px' }}>Ready to modernize your shop?</h2>
+          <p style={{ fontSize: 'var(--text-lg)', color: 'var(--text-secondary)', marginBottom: '24px' }}>
+            Join local shop owners already scaling their sales on zCart.
+          </p>
+          <Link href="/signup" className="btn btn-primary btn-lg" style={{ borderRadius: 'var(--radius-full)', padding: '14px 32px' }}>
+            Create Your Free Shop <ArrowRight size={18} />
           </Link>
         </div>
       </section>
 
       <MarketingFooter />
+
+      {/* Sticky Bottom Conversion Bar */}
+      <StickyFloatingCta />
     </div>
   )
 }

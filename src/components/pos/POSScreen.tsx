@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useCallback, useRef, type KeyboardEvent } from 'react'
-import { Search, Plus, Minus, Trash2, ShoppingBag, X, User, CreditCard, Banknote, Smartphone, Check, ScanLine } from 'lucide-react'
+import { useState, useCallback, useRef, useEffect, type KeyboardEvent } from 'react'
+import { Search, Plus, Minus, Trash2, ShoppingBag, X, User, CreditCard, Banknote, Smartphone, Check, ScanLine, Ticket, Tag } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import BarcodeScannerModal from '@/components/shared/BarcodeScannerModal'
+import ModeSwitcher from '@/components/shared/ModeSwitcher'
+
+import type { ProductBatch } from '@/types/database'
 
 interface POSProduct {
   id: string
@@ -18,6 +21,9 @@ interface POSProduct {
   sku: string | null
   category_id: string | null
   track_inventory: boolean
+  has_batch?: boolean
+  has_expiry?: boolean
+  min_selling_price: number | null
   categories: { name: string } | null
   inventory: { quantity: number }[]
 }
@@ -26,6 +32,9 @@ interface CartItem {
   product: POSProduct
   quantity: number
   discount: number
+  unitPrice: number
+  selectedBatch?: ProductBatch | null
+  availableBatches?: ProductBatch[]
 }
 
 interface POSScreenProps {
@@ -55,7 +64,42 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
   const [activeTab, setActiveTab] = useState<'products' | 'cart'>('products')
   const [scannerOpen, setScannerOpen] = useState(false)
   const [scanNotice, setScanNotice] = useState<string | null>(null)
+  const [couponCode, setCouponCode] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null)
+  const [couponError, setCouponError] = useState<string | null>(null)
+  const [couponLoading, setCouponLoading] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'F2') {
+        e.preventDefault()
+        searchRef.current?.focus()
+      } else if (e.key === 'F4') {
+        e.preventDefault()
+        if (cart.length > 0) setCheckoutMode(true)
+      } else if (e.key === 'Escape') {
+        if (checkoutMode) {
+          setCheckoutMode(false)
+        }
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [cart.length, checkoutMode])
+
+  const getCouponDiscount = useCallback((subtotal: number, coupon: any) => {
+    if (!coupon) return 0
+    if (coupon.discount_type === 'percent') {
+      const discount = subtotal * (Number(coupon.discount_value) / 100)
+      if (coupon.max_discount !== null) {
+        return Math.min(discount, Number(coupon.max_discount))
+      }
+      return discount
+    } else {
+      return Math.min(Number(coupon.discount_value), subtotal)
+    }
+  }, [])
 
   const filteredProducts = products.filter((p) => {
     const matchSearch = !search ||
@@ -66,14 +110,36 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
     return matchSearch && matchCat
   })
 
-  const addToCart = useCallback((product: POSProduct) => {
+  const addToCart = useCallback(async (product: POSProduct) => {
+    const supabase = createClient()
+    const { data: batches } = await supabase
+      .from('product_batches')
+      .select('*')
+      .eq('product_id', product.id)
+      .eq('is_active', true)
+      .gt('quantity', 0)
+      .order('created_at', { ascending: true }) // FIFO: oldest batch first
+
+    const availableBatches = (batches ?? []) as ProductBatch[]
+    const selectedBatch = availableBatches.length > 0 ? availableBatches[0] : null
+    const unitPrice = selectedBatch ? Number(selectedBatch.selling_price) : Number(product.selling_price)
+
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id)
       if (existing) {
         return prev.map((i) => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i)
       }
-      return [...prev, { product, quantity: 1, discount: 0 }]
+      return [...prev, { product, quantity: 1, discount: 0, unitPrice, selectedBatch, availableBatches }]
     })
+  }, [])
+
+  const switchBatch = useCallback((productId: string, batchId: string) => {
+    setCart((prev) => prev.map((item) => {
+      if (item.product.id !== productId) return item
+      const newBatch = item.availableBatches?.find((b) => b.id === batchId) ?? null
+      const unitPrice = newBatch ? Number(newBatch.selling_price) : Number(item.product.selling_price)
+      return { ...item, selectedBatch: newBatch, unitPrice }
+    }))
   }, [])
 
   const updateQty = useCallback((productId: string, delta: number) => {
@@ -124,17 +190,120 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
     setCart((prev) => prev.filter((i) => i.product.id !== productId))
   }, [])
 
-  const cartSubtotal = cart.reduce((s, i) => s + i.product.selling_price * i.quantity - i.discount, 0)
+  const cartSubtotal = cart.reduce((s, i) => s + (i.unitPrice ?? i.product.selling_price) * i.quantity - i.discount, 0)
+
+  // Calculate dynamic coupon validity and discount
+  let couponErrorMsg: string | null = null
+  let couponDiscount = 0
+  if (appliedCoupon) {
+    if (cartSubtotal < Number(appliedCoupon.min_order_value)) {
+      couponErrorMsg = `Coupon requires minimum order of ₹${appliedCoupon.min_order_value}`
+    } else {
+      const calculatedDiscount = getCouponDiscount(cartSubtotal, appliedCoupon)
+      // Check if any product goes below floor price
+      let floorPriceViolated = false
+      for (const item of cart) {
+        const item_unit_price = item.unitPrice ?? item.product.selling_price
+        const item_total = item_unit_price * item.quantity
+        const item_share = item_total / cartSubtotal
+        const item_discount = calculatedDiscount * item_share
+        const effective_unit_price = (item_total - item_discount) / item.quantity
+        if (item.product.min_selling_price !== null && effective_unit_price < Number(item.product.min_selling_price)) {
+          couponErrorMsg = `Discount pushes "${item.product.name}" below its minimum selling price (₹${item.product.min_selling_price})`
+          floorPriceViolated = true
+          break
+        }
+      }
+      if (!floorPriceViolated) {
+        couponDiscount = calculatedDiscount
+      }
+    }
+  }
+
   const cartTax = cart.reduce((s, i) => {
     const rate = Number(i.product.gst_rate) / 100
-    const lineTotal = i.product.selling_price * i.quantity - i.discount
+    const item_unit_price = i.unitPrice ?? i.product.selling_price
+    const item_total = item_unit_price * i.quantity - i.discount
+    const item_share = cartSubtotal > 0 ? (item_total / cartSubtotal) : 0
+    const item_discount = couponDiscount * item_share
+    const lineTotal = item_total - item_discount
     return s + (lineTotal * rate) / (1 + rate)
   }, 0)
-  const cartTotal = cartSubtotal
+
+  const cartTotal = Math.max(0, cartSubtotal - couponDiscount)
   const change = Number(amountTendered) - cartTotal
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return
+    setCouponLoading(true)
+    setCouponError(null)
+    const supabase = createClient()
+    try {
+      const { data: coupon, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('shop_id', shopId)
+        .eq('code', couponCode.trim().toUpperCase())
+        .eq('is_active', true)
+        .single()
+
+      if (error || !coupon) {
+        setCouponError('Invalid coupon code')
+        setAppliedCoupon(null)
+        return
+      }
+
+      // Check dates
+      const now = new Date()
+      if (coupon.starts_at && new Date(coupon.starts_at) > now) {
+        setCouponError('Coupon is not active yet')
+        return
+      }
+      if (coupon.expires_at && new Date(coupon.expires_at) < now) {
+        setCouponError('Coupon has expired')
+        return
+      }
+
+      // Check usage limits
+      if (coupon.usage_limit !== null && coupon.usage_count >= coupon.usage_limit) {
+        setCouponError('Coupon limit reached')
+        return
+      }
+
+      // Check minimum order value
+      if (cartSubtotal < Number(coupon.min_order_value)) {
+        setCouponError(`Min order value is ₹${coupon.min_order_value}`)
+        return
+      }
+
+      // Check floor price
+      const discount = getCouponDiscount(cartSubtotal, coupon)
+      for (const item of cart) {
+        const item_total = item.product.selling_price * item.quantity
+        const item_share = item_total / cartSubtotal
+        const item_discount = discount * item_share
+        const effective_unit_price = (item_total - item_discount) / item.quantity
+        if (item.product.min_selling_price !== null && effective_unit_price < Number(item.product.min_selling_price)) {
+          setCouponError(`Discount pushes "${item.product.name}" below its minimum selling price (₹${item.product.min_selling_price})`)
+          return
+        }
+      }
+
+      setAppliedCoupon(coupon)
+      setCouponError(null)
+    } catch (err) {
+      setCouponError('Failed to apply coupon')
+    } finally {
+      setCouponLoading(false)
+    }
+  }
 
   const handleCheckout = async () => {
     if (!cart.length) return
+    if (appliedCoupon && couponErrorMsg) {
+      setError(couponErrorMsg)
+      return
+    }
     setProcessing(true)
     setError(null)
 
@@ -163,28 +332,39 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
         status: 'delivered',
         payment_status: 'paid',
         subtotal: cartSubtotal,
+        discount_amount: couponDiscount,
         total_amount: cartTotal,
         paid_amount: cartTotal,
         delivery_status: 'not_required',
+        coupon_id: appliedCoupon?.id || null,
+        coupon_code: appliedCoupon?.code || null,
       }).select('id').single()
 
       if (orderErr || !order) throw orderErr ?? new Error('Failed to create order')
 
       // Insert order items
-      const items = cart.map((i) => ({
-        order_id: order.id,
-        shop_id: shopId,
-        product_id: i.product.id,
-        product_name: i.product.name,
-        unit: i.product.unit,
-        quantity: i.quantity,
-        unit_price: i.product.selling_price,
-        mrp: i.product.mrp,
-        discount_amount: i.discount,
-        gst_rate: i.product.gst_rate,
-        line_total: i.product.selling_price * i.quantity - i.discount,
-        taxable_amount: i.product.selling_price * i.quantity - i.discount,
-      }))
+      const items = cart.map((i) => {
+        const item_unit_price = i.unitPrice ?? i.product.selling_price
+        const item_total = item_unit_price * i.quantity - i.discount
+        const item_share = cartSubtotal > 0 ? (item_total / cartSubtotal) : 0
+        const item_discount = couponDiscount * item_share
+        const final_line_total = item_total - item_discount
+
+        return {
+          order_id: order.id,
+          shop_id: shopId,
+          product_id: i.product.id,
+          product_name: i.product.name,
+          unit: i.product.unit,
+          quantity: i.quantity,
+          unit_price: item_unit_price,
+          mrp: i.selectedBatch?.mrp ?? i.product.mrp,
+          discount_amount: i.discount + item_discount,
+          gst_rate: i.product.gst_rate,
+          line_total: final_line_total,
+          taxable_amount: final_line_total,
+        }
+      })
       await supabase.from('order_items').insert(items)
 
       // Create payment record
@@ -198,9 +378,9 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
         gateway: 'manual',
       })
 
-      // Decrement inventory via ledger entries
-      await Promise.all(cart.map((i) =>
-        supabase.from('inventory_ledger').insert({
+      // Decrement inventory via ledger entries and deduct batch quantity
+      await Promise.all(cart.map(async (i) => {
+        await supabase.from('inventory_ledger').insert({
           shop_id: shopId,
           product_id: i.product.id,
           entry_type: 'sale',
@@ -209,12 +389,41 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
           reference_type: 'order',
           reference_id: order.id,
         })
-      ))
+
+        if (i.selectedBatch?.id) {
+          const { data: b } = await supabase
+            .from('product_batches')
+            .select('quantity')
+            .eq('id', i.selectedBatch.id)
+            .single()
+          const currentBatchQty = Number(b?.quantity ?? i.selectedBatch.quantity)
+          await supabase
+            .from('product_batches')
+            .update({ quantity: Math.max(0, currentBatchQty - i.quantity) })
+            .eq('id', i.selectedBatch.id)
+        }
+      }))
+
+      // Increment coupon usage count
+      if (appliedCoupon) {
+        const { data: latestCoupon } = await supabase
+          .from('coupons')
+          .select('usage_count')
+          .eq('id', appliedCoupon.id)
+          .single()
+        const currentUsage = latestCoupon?.usage_count ?? 0
+        await supabase
+          .from('coupons')
+          .update({ usage_count: currentUsage + 1 })
+          .eq('id', appliedCoupon.id)
+      }
 
       setSuccess(order.id)
       setCart([])
       setCustomerPhone('')
       setAmountTendered('')
+      setAppliedCoupon(null)
+      setCouponCode('')
       setCheckoutMode(false)
       router.refresh()
     } catch (err: any) {
@@ -223,6 +432,33 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
       setProcessing(false)
     }
   }
+
+  // POS Keyboard Shortcuts (F1: Search, F2: Charge, F4: Cycle Payment, Esc: Clear)
+  useEffect(() => {
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+      const activeTag = (document.activeElement?.tagName || '').toLowerCase()
+      const isInputFocused = activeTag === 'input' || activeTag === 'textarea'
+
+      if (e.key === 'F1' || (e.key === '/' && !isInputFocused)) {
+        e.preventDefault()
+        searchRef.current?.focus()
+      } else if (e.key === 'F2' || (e.ctrlKey && e.key === 'Enter')) {
+        e.preventDefault()
+        if (cart.length > 0 && !processing) {
+          handleCheckout()
+        }
+      } else if (e.key === 'F4') {
+        e.preventDefault()
+        setPaymentMethod((prev) => (prev === 'cash' ? 'upi' : prev === 'upi' ? 'card' : 'cash'))
+      } else if (e.key === 'Escape') {
+        if (scannerOpen) setScannerOpen(false)
+        else setSearch('')
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [cart, processing, scannerOpen, handleCheckout])
 
   const totalCartQty = cart.reduce((sum, item) => sum + item.quantity, 0)
 
@@ -273,6 +509,7 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
             >
               <ScanLine size={18} />
             </button>
+            <ModeSwitcher compact />
           </div>
 
           {scanNotice && (
@@ -409,21 +646,77 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
                     <p style={{ fontSize: 'var(--text-sm)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {item.product.name}
                     </p>
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
-                      ₹{item.product.selling_price} × {item.quantity} = <strong style={{ color: 'var(--text-secondary)' }}>₹{(item.product.selling_price * item.quantity).toFixed(0)}</strong>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span>₹{item.unitPrice ?? item.product.selling_price} × {item.quantity} = <strong style={{ color: 'var(--text-secondary)' }}>₹{((item.unitPrice ?? item.product.selling_price) * item.quantity).toFixed(0)}</strong></span>
+                      {item.product.min_selling_price !== null && (
+                        <span style={{ fontSize: 10, background: 'rgba(245,158,11,0.12)', color: 'var(--color-warning-400)', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>
+                          Floor: ₹{item.product.min_selling_price}
+                        </span>
+                      )}
                     </p>
+                    {item.availableBatches && item.availableBatches.length > 0 && (
+                      <div style={{ marginTop: 4 }}>
+                        <select
+                          className="input select"
+                          style={{ fontSize: 11, padding: '2px 6px', height: 24, borderRadius: 4, width: 'auto', background: 'var(--surface-elevated)' }}
+                          value={item.selectedBatch?.id || ''}
+                          onChange={(e) => switchBatch(item.product.id, e.target.value)}
+                        >
+                          {item.availableBatches.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              Batch: {b.batch_number} — ₹{b.selling_price} ({b.quantity} left)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
-                    <button onClick={() => updateQty(item.product.id, -1)} className="btn btn-ghost btn-icon btn-sm"><Minus size={12} /></button>
+                    <button onClick={() => updateQty(item.product.id, -1)} className="btn btn-ghost btn-icon touch-target" style={{ width: 36, height: 36 }} aria-label="Decrease quantity"><Minus size={14} /></button>
                     <span style={{ minWidth: 24, textAlign: 'center', fontSize: 'var(--text-sm)', fontWeight: 600 }}>{item.quantity}</span>
-                    <button onClick={() => updateQty(item.product.id, 1)} className="btn btn-ghost btn-icon btn-sm"><Plus size={12} /></button>
-                    <button onClick={() => removeItem(item.product.id)} className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--color-danger-400)' }}><Trash2 size={12} /></button>
+                    <button onClick={() => updateQty(item.product.id, 1)} className="btn btn-ghost btn-icon touch-target" style={{ width: 36, height: 36 }} aria-label="Increase quantity"><Plus size={14} /></button>
+                    <button onClick={() => removeItem(item.product.id)} className="btn btn-ghost btn-icon touch-target" style={{ width: 36, height: 36, color: 'var(--color-danger-400)' }} aria-label="Remove item"><Trash2 size={14} /></button>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
+
+        {/* Mobile floating mini-cart bar */}
+        {cart.length > 0 && activeTab === 'products' && (
+          <div
+            onClick={() => setActiveTab('cart')}
+            className="md:hidden"
+            style={{
+              position: 'fixed',
+              bottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
+              left: '16px',
+              right: '16px',
+              zIndex: 100,
+              background: 'var(--color-primary-500)',
+              color: '#ffffff',
+              borderRadius: 'var(--radius-full)',
+              padding: '12px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              boxShadow: 'var(--shadow-xl)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShoppingBag size={18} />
+              <span style={{ fontSize: '14px' }}>
+                {totalCartQty} {totalCartQty === 1 ? 'item' : 'items'} · ₹{cartTotal.toFixed(0)}
+              </span>
+            </div>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>
+              View Cart →
+            </span>
+          </div>
+        )}
 
         {/* Checkout panel */}
         {cart.length > 0 && (
@@ -438,6 +731,20 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
                 <span>Total</span>
                 <span style={{ color: 'var(--color-primary-400)', fontSize: 'var(--text-xl)' }}>₹{cartTotal.toFixed(2)}</span>
               </div>
+              {appliedCoupon && !couponErrorMsg && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(34,197,94,0.08)', border: '1px dashed rgba(34,197,94,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)', marginTop: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Ticket size={14} color="var(--color-success-500)" />
+                    <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-success-500)' }}>{appliedCoupon.code}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>
+                      (-₹{couponDiscount.toFixed(2)})
+                    </span>
+                  </div>
+                  <button onClick={() => setAppliedCoupon(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', padding: 2 }}>
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Customer phone */}
@@ -454,6 +761,41 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
                 />
               </div>
             </div>
+
+            {/* Promo Code Input */}
+            {!appliedCoupon ? (
+              <div style={{ display: 'flex', gap: 'var(--space-2)', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <span style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }}>
+                      <Ticket size={14} />
+                    </span>
+                    <input
+                      id="pos-coupon-code"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      placeholder="Enter promo code"
+                      className="input input-icon-left"
+                      style={{ fontSize: 'var(--text-sm)' }}
+                    />
+                  </div>
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    className="btn btn-secondary"
+                    style={{ height: 42, padding: '0 var(--space-4)' }}
+                  >
+                    Apply
+                  </button>
+                </div>
+                {couponError && (
+                  <p style={{ color: 'var(--color-danger-400)', fontSize: 11, margin: 0 }}>{couponError}</p>
+                )}
+              </div>
+            ) : null}
+            {appliedCoupon && couponErrorMsg && (
+              <p style={{ color: 'var(--color-danger-400)', fontSize: 11, margin: 0 }}>{couponErrorMsg}</p>
+            )}
 
             {/* Payment method */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'var(--space-2)' }}>
@@ -474,6 +816,30 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
             {/* Cash tendered */}
             {paymentMethod === 'cash' && (
               <div className="input-wrapper">
+                <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-secondary"
+                    onClick={() => setAmountTendered(String(Math.ceil(cartTotal)))}
+                    style={{ fontSize: 11, padding: '3px 8px' }}
+                  >
+                    Exact (₹{Math.ceil(cartTotal)})
+                  </button>
+                  {[100, 200, 500, 2000].map((denom) => {
+                    if (denom < Math.ceil(cartTotal) && cartTotal > 0) return null
+                    return (
+                      <button
+                        key={denom}
+                        type="button"
+                        className="btn btn-xs btn-secondary"
+                        onClick={() => setAmountTendered(String(denom))}
+                        style={{ fontSize: 11, padding: '3px 8px' }}
+                      >
+                        ₹{denom}
+                      </button>
+                    )
+                  })}
+                </div>
                 <input
                   id="pos-tendered"
                   type="number"

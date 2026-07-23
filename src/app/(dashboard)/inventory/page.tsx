@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Warehouse, AlertTriangle, Search } from 'lucide-react'
 import type { Metadata } from 'next'
 import AdjustStockButton from '@/components/dashboard/AdjustStockButton'
+import BatchButton from '@/components/dashboard/BatchButton'
 
 export const metadata: Metadata = { title: 'Inventory' }
 
@@ -25,7 +26,7 @@ export default async function InventoryPage({
 
   let query = supabase
     .from('inventory')
-    .select('id, product_id, location_id, variant_id, quantity, reserved, reorder_point, updated_at, products(name, sku, images, status, unit)')
+    .select('id, product_id, location_id, variant_id, quantity, reserved, reorder_point, updated_at, products(name, sku, images, status, unit, has_batch, has_expiry)')
     .eq('shop_id', shopUser.shop_id)
     .order('quantity', { ascending: true })
 
@@ -149,7 +150,13 @@ export default async function InventoryPage({
                     <td style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
                       {new Date(item.updated_at).toLocaleDateString('en-IN')}
                     </td>
-                    <td>
+                    <td style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <BatchButton
+                        shopId={shopUser.shop_id}
+                        productId={item.product_id}
+                        productName={item.products?.name ?? 'Product'}
+                        hasExpiry={item.products?.has_expiry}
+                      />
                       <AdjustStockButton
                         shopId={shopUser.shop_id}
                         productId={item.product_id}

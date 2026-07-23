@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { cache } from 'react'
 
 export async function createClient() {
   const cookieStore = await cookies()
@@ -27,6 +28,18 @@ export async function createClient() {
   )
 }
 
+/** Request-scoped cached fetch for authenticated user. Checks cookies first & deduplicates per request. */
+export const getAuthUser = cache(async () => {
+  const cookieStore = await cookies()
+  const hasSessionCookie = cookieStore.getAll().some((c) => c.name.startsWith('sb-'))
+  if (!hasSessionCookie) return null
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+})
+
+
 /** Service-role client for privileged operations (webhooks, edge functions). */
 export async function createServiceClient() {
   const cookieStore = await cookies()
@@ -50,3 +63,20 @@ export async function createServiceClient() {
     }
   )
 }
+
+/** Cookie-less public Supabase client for static pre-rendering, ISR, and public data fetching. */
+export function createPublicClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return []
+        },
+        setAll() {},
+      },
+    }
+  )
+}
+

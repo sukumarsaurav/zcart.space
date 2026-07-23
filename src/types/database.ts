@@ -135,6 +135,7 @@ export interface Product {
   hsn_code: string | null
   gst_rate: GstRate
   tax_inclusive: boolean
+  min_selling_price: number | null
   track_inventory: boolean
   has_batch: boolean
   has_expiry: boolean
@@ -160,6 +161,22 @@ export interface ProductVariant {
   is_active: boolean
   sort_order: number
   metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface ProductBatch {
+  id: string
+  shop_id: string
+  product_id: string
+  variant_id: string | null
+  batch_number: string
+  mrp: number
+  selling_price: number
+  cost_price: number | null
+  quantity: number
+  expiry_date: string | null
+  is_active: boolean
   created_at: string
   updated_at: string
 }
@@ -335,6 +352,155 @@ export interface PlanFeature {
   note: string | null
 }
 
+export interface Coupon {
+  id: string
+  shop_id: string
+  code: string
+  description: string | null
+  scope: CouponScope
+  discount_type: DiscountType
+  discount_value: number
+  max_discount: number | null
+  min_order_value: number
+  usage_limit: number | null
+  usage_count: number
+  per_user_limit: number
+  is_active: boolean
+  starts_at: string | null
+  expires_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Vendor {
+  id: string
+  shop_id: string
+  name: string
+  company_name: string | null
+  phone: string | null
+  email: string | null
+  gstin: string | null
+  address_line1: string | null
+  address_line2: string | null
+  city: string | null
+  state: string | null
+  pincode: string | null
+  outstanding_payable: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CreditLedger {
+  id: string
+  shop_id: string
+  party_type: 'customer' | 'vendor'
+  customer_id: string | null
+  vendor_id: string | null
+  txn_type: CreditTxnType
+  amount: number
+  balance_after: number
+  order_id: string | null
+  payment_id: string | null
+  notes: string | null
+  recorded_by: string | null
+  created_at: string
+}
+
+export interface Expense {
+  id: string
+  shop_id: string
+  location_id: string | null
+  category: ExpenseCategory
+  amount: number
+  expense_date: string
+  description: string | null
+  vendor_name: string | null
+  receipt_url: string | null
+  recorded_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type PurchaseStatus = 'draft' | 'ordered' | 'received' | 'cancelled'
+
+export interface Purchase {
+  id: string
+  shop_id: string
+  location_id: string | null
+  vendor_id: string | null
+  purchase_number: string
+  invoice_number: string | null
+  purchase_date: string
+  status: PurchaseStatus
+  subtotal: number
+  tax_amount: number
+  total_amount: number
+  paid_amount: number
+  payment_status: PaymentStatus
+  payment_method: PaymentMethod
+  notes: string | null
+  recorded_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PurchaseItem {
+  id: string
+  purchase_id: string
+  shop_id: string
+  product_id: string
+  variant_id: string | null
+  product_name: string
+  quantity: number
+  unit_cost: number
+  gst_rate: GstRate
+  tax_amount: number
+  line_total: number
+  batch_number: string | null
+  expiry_date: string | null
+  created_at: string
+}
+
+export type EstimateStatus = 'draft' | 'sent' | 'converted' | 'rejected' | 'expired'
+
+export interface Estimate {
+  id: string
+  shop_id: string
+  customer_id: string | null
+  estimate_number: string
+  estimate_date: string
+  valid_until: string | null
+  status: EstimateStatus
+  subtotal: number
+  discount_amount: number
+  taxable_amount: number
+  tax_amount: number
+  total_amount: number
+  converted_order_id: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EstimateItem {
+  id: string
+  estimate_id: string
+  shop_id: string
+  product_id: string | null
+  variant_id: string | null
+  product_name: string
+  quantity: number
+  unit_price: number
+  discount_amount: number
+  gst_rate: GstRate
+  tax_amount: number
+  line_total: number
+  created_at: string
+}
+
 // ─────────────────────────────────────────────────────────────────
 // Database interface for Supabase client typing
 // ─────────────────────────────────────────────────────────────────
@@ -348,12 +514,21 @@ export interface Database {
       categories: { Row: Category; Insert: Partial<Category>; Update: Partial<Category> }
       products: { Row: Product; Insert: Partial<Product>; Update: Partial<Product> }
       product_variants: { Row: ProductVariant; Insert: Partial<ProductVariant>; Update: Partial<ProductVariant> }
+      product_batches: { Row: ProductBatch; Insert: Partial<ProductBatch>; Update: Partial<ProductBatch> }
       inventory: { Row: Inventory; Insert: Partial<Inventory>; Update: Partial<Inventory> }
       customers: { Row: Customer; Insert: Partial<Customer>; Update: Partial<Customer> }
       orders: { Row: Order; Insert: Partial<Order>; Update: Partial<Order> }
       order_items: { Row: OrderItem; Insert: Partial<OrderItem>; Update: Partial<OrderItem> }
       payments: { Row: Payment; Insert: Partial<Payment>; Update: Partial<Payment> }
       invoices: { Row: Invoice; Insert: Partial<Invoice>; Update: Partial<Invoice> }
+      coupons: { Row: Coupon; Insert: Partial<Coupon>; Update: Partial<Coupon> }
+      vendors: { Row: Vendor; Insert: Partial<Vendor>; Update: Partial<Vendor> }
+      credit_ledger: { Row: CreditLedger; Insert: Partial<CreditLedger>; Update: Partial<CreditLedger> }
+      expenses: { Row: Expense; Insert: Partial<Expense>; Update: Partial<Expense> }
+      purchases: { Row: Purchase; Insert: Partial<Purchase>; Update: Partial<Purchase> }
+      purchase_items: { Row: PurchaseItem; Insert: Partial<PurchaseItem>; Update: Partial<PurchaseItem> }
+      estimates: { Row: Estimate; Insert: Partial<Estimate>; Update: Partial<Estimate> }
+      estimate_items: { Row: EstimateItem; Insert: Partial<EstimateItem>; Update: Partial<EstimateItem> }
     }
     Views: {
       v_daily_sales: { Row: Record<string, unknown> }

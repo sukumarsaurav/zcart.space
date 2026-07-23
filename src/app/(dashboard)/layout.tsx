@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import type { Metadata } from 'next'
 
@@ -8,11 +8,10 @@ export const metadata: Metadata = {
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
+  const user = await getAuthUser()
+  if (!user) redirect('/login')
 
-  // Get authenticated user
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) redirect('/login')
+  const supabase = await createClient()
 
   // Get their shop
   const { data: shopUser } = await supabase

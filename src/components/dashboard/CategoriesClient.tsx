@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { Fragment, useState, useTransition } from 'react'
 import { Tag, Plus, Trash2, AlertTriangle, Loader2 } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import CategoryModal from '@/components/dashboard/CategoryModal'
 import { deleteCategory } from '@/app/(dashboard)/categories/actions'
+
+
 
 interface Category {
   id: string
@@ -84,8 +86,8 @@ export default function CategoriesClient({ shopId, categories, countMap }: Categ
             </thead>
             <tbody>
               {roots.map((cat) => (
-                <>
-                  <tr key={cat.id}>
+                <Fragment key={cat.id}>
+                  <tr>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                         {cat.image_url ? (
@@ -137,7 +139,7 @@ export default function CategoriesClient({ shopId, categories, countMap }: Categ
                       </td>
                     </tr>
                   ))}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

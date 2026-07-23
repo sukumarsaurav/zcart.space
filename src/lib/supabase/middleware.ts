@@ -85,28 +85,29 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
-  // Refresh session — do NOT remove, needed to keep server session alive
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
   if (isSubdomain) {
     const shopSlug = hostname.split('.')[0]
-    // Rewrite to storefront routes
     url.pathname = `/${shopSlug}${url.pathname}`
     return NextResponse.rewrite(url)
   }
 
-  if (isDashboardRoute && !user) {
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
+  // Only refresh/verify session via Supabase network call if accessing protected dashboard or auth routes
+  if (isDashboardRoute || isAuthRoute) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-  // Redirect authenticated users away from auth pages
-  if (user && isAuthRoute) {
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+    if (isDashboardRoute && !user) {
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+
+    if (user && isAuthRoute) {
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse
 }
+

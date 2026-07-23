@@ -1,7 +1,24 @@
-import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import type { Shop, ShopTheme } from '@/types/database'
+import type { ShopTheme } from '@/types/database'
 import BottomNav from '@/components/storefront/BottomNav'
+import { getShopBySlug } from '@/lib/storefront/shop'
+import { Inter, Outfit, Playfair_Display, Roboto, Space_Grotesk } from 'next/font/google'
+
+const inter = Inter({ subsets: ['latin'], display: 'swap' })
+const outfit = Outfit({ subsets: ['latin'], display: 'swap' })
+const playfair = Playfair_Display({ subsets: ['latin'], display: 'swap' })
+const roboto = Roboto({ weight: ['400', '500', '700'], subsets: ['latin'], display: 'swap' })
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], display: 'swap' })
+
+const fontMap = {
+  inter,
+  outfit,
+  playfair,
+  roboto,
+  'space-grotesk': spaceGrotesk,
+}
+
+export const revalidate = 60
 
 export default async function StorefrontLayout({
   children,
@@ -10,35 +27,22 @@ export default async function StorefrontLayout({
   children: React.ReactNode
   params: Promise<{ shopSlug: string }>
 }) {
-  const supabase = await createClient()
   const { shopSlug } = await params
-
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('id, name, slug, theme, logo_url, banner_url, phone, email, is_active')
-    .eq('slug', shopSlug)
-    .eq('is_active', true)
-    .single()
+  const shop = await getShopBySlug(shopSlug)
 
   if (!shop) notFound()
 
   const theme = shop.theme as ShopTheme
   const primaryColor = theme.primary_color ?? '#6366f1'
-  const fontFam = theme.font === 'playfair' ? '"Playfair Display", serif' 
-    : theme.font === 'roboto' ? '"Roboto", sans-serif' 
-    : theme.font === 'space-grotesk' ? '"Space Grotesk", sans-serif' 
-    : theme.font === 'outfit' ? '"Outfit", sans-serif' 
-    : '"Inter", sans-serif'
+  const selectedFont = fontMap[theme.font as keyof typeof fontMap] ?? inter
+  const fontFam = selectedFont.style.fontFamily
 
   const radBase = theme.radius === 'sharp' ? '0px' : theme.radius === 'pill' ? '9999px' : '8px'
   const radSm = theme.radius === 'sharp' ? '0px' : theme.radius === 'pill' ? '16px' : '4px'
   const radLg = theme.radius === 'sharp' ? '0px' : theme.radius === 'pill' ? '24px' : '12px'
 
   return (
-    <>
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <div className={selectedFont.className}>
       <style>{`
         :root {
           --shop-primary: ${primaryColor};
@@ -61,6 +65,7 @@ export default async function StorefrontLayout({
         {children}
         <BottomNav shopSlug={shopSlug} />
       </div>
-    </>
+    </div>
   )
 }
+

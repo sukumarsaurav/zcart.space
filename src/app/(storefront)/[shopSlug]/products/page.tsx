@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -6,14 +6,15 @@ import { ShoppingBag, ArrowLeft } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { ShopTheme } from '@/types/database'
 import WishlistButton from '@/components/storefront/WishlistButton'
-import { getWishlistedProductIds } from '../wishlist-actions'
 import SortFilterBar from '@/components/storefront/SortFilterBar'
 import { calculateDiscount } from '@/lib/storefront/pricing'
+import { getShopBySlug } from '@/lib/storefront/shop'
+
+export const revalidate = 60
 
 export async function generateMetadata({ params }: { params: Promise<{ shopSlug: string }> }): Promise<Metadata> {
-  const supabase = await createClient()
   const { shopSlug } = await params
-  const { data: shop } = await supabase.from('shops').select('name').eq('slug', shopSlug).single()
+  const shop = await getShopBySlug(shopSlug)
   return { title: `Products | ${shop?.name ?? 'Shop'}` }
 }
 
@@ -24,12 +25,13 @@ export default async function StorefrontProductsPage({
   params: Promise<{ shopSlug: string }>
   searchParams: Promise<{ category?: string; q?: string; sort?: string; sale?: string; minPrice?: string; maxPrice?: string }>
 }) {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { shopSlug } = await params
   const sp = await searchParams
 
-  const { data: shop } = await supabase.from('shops').select('id, name, slug, theme').eq('slug', shopSlug).eq('is_active', true).single()
+  const shop = await getShopBySlug(shopSlug)
   if (!shop) notFound()
+
 
   const theme = shop.theme as ShopTheme
   const pc = theme.primary_color ?? '#6366f1'
@@ -79,7 +81,8 @@ export default async function StorefrontProductsPage({
     ? (fetchedProducts ?? []).filter((p) => Number(p.mrp) > Number(p.selling_price))
     : fetchedProducts
   const discount = calculateDiscount
-  const wishlistedIds = await getWishlistedProductIds(shopSlug)
+  const wishlistedIds = new Set<string>()
+
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '90px' /* space for bottom bar */ }}>

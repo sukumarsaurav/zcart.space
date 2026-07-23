@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingBag, Trash2, Plus, Minus, ArrowLeft, ShoppingCart, ArrowRight } from 'lucide-react'
+import { ShoppingBag, Trash2, Plus, Minus, ArrowLeft, ShoppingCart, ArrowRight, MessageCircle } from 'lucide-react'
 
 interface CartItem {
   productId: string
@@ -44,6 +44,14 @@ export default function CartPage({ params }: { params: Promise<{ shopSlug: strin
 
   const total = cart.reduce((s, i) => s + i.price * i.quantity, 0)
   const itemCount = cart.reduce((s, i) => s + i.quantity, 0)
+
+  const handleWhatsAppOrder = () => {
+    if (!cart.length) return
+    const lines = cart.map((i) => `• ${i.name} (x${i.quantity}) - ₹${(i.price * i.quantity).toLocaleString('en-IN')}`)
+    const text = `Hi, I would like to place an order from your shop:\n\n${lines.join('\n')}\n\nTotal: ₹${total.toLocaleString('en-IN')}`
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`
+    window.open(url, '_blank')
+  }
 
   if (!loaded) {
     return <div style={{ minHeight: '100vh', background: 'var(--sf-bg, var(--surface-bg))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>Loading…</div>
@@ -143,6 +151,7 @@ export default function CartPage({ params }: { params: Promise<{ shopSlug: strin
                   <span>₹{total.toLocaleString('en-IN')}</span>
                 </div>
               </div>
+
               <Link
                 href={`/${shopSlug}/checkout`}
                 id="checkout-btn"
@@ -156,6 +165,21 @@ export default function CartPage({ params }: { params: Promise<{ shopSlug: strin
               >
                 Proceed to Checkout <ArrowRight size={16} />
               </Link>
+
+              <button
+                type="button"
+                onClick={handleWhatsAppOrder}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
+                  padding: 'var(--space-3) var(--space-5)',
+                  background: '#25D366', color: '#fff',
+                  borderRadius: 'var(--radius-lg)', fontWeight: 700,
+                  fontSize: 'var(--text-sm)', border: 'none', cursor: 'pointer',
+                }}
+              >
+                <MessageCircle size={16} /> Order via WhatsApp
+              </button>
+
               <Link href={`/${shopSlug}/products`} style={{
                 textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)',
               }}>
