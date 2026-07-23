@@ -15,6 +15,7 @@ export default function ModeSwitcher({ compact, style }: ModeSwitcherProps) {
 
   return (
     <div
+      className={`mode-switcher-wrapper ${!isPos ? 'topbar-mode-switcher-admin' : ''}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
