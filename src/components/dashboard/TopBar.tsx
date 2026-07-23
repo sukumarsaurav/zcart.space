@@ -60,7 +60,7 @@ export default function TopBar({ shopName, shopSlug, userEmail, onOpenMobile, lo
         >
           <Menu size={18} />
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
+        <div className="topbar-breadcrumbs" style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
           <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shopName}</p>
           <span style={{ color: 'var(--surface-border)', fontSize: '18px', fontWeight: 300, flexShrink: 0 }}>|</span>
           <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pageTitle}</p>

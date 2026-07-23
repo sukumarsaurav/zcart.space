@@ -509,7 +509,6 @@ export default function POSScreen({ shopId, products, categories }: POSScreenPro
             >
               <ScanLine size={18} />
             </button>
-            <ModeSwitcher compact />
           </div>
 
           {scanNotice && (

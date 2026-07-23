@@ -44,10 +44,10 @@ export default function ModeSwitcher({ compact, style }: ModeSwitcherProps) {
           color: isPos ? '#ffffff' : 'var(--text-secondary, #64748b)',
           boxShadow: isPos ? '0 2px 8px rgba(99,102,241,0.3)' : 'none',
         }}
-        title="Switch to POS Billing Counter"
+        title="POS Billing Counter"
       >
-        <Zap size={compact ? 13 : 14} />
-        <span>POS Counter</span>
+        <Zap size={compact ? 14 : 15} />
+        <span className="mode-switcher-text">POS Counter</span>
       </Link>
 
       <Link
@@ -68,10 +68,10 @@ export default function ModeSwitcher({ compact, style }: ModeSwitcherProps) {
           color: !isPos ? '#ffffff' : 'var(--text-secondary, #64748b)',
           boxShadow: !isPos ? '0 2px 8px rgba(99,102,241,0.3)' : 'none',
         }}
-        title="Switch to Admin Dashboard"
+        title="Admin Panel"
       >
-        <LayoutDashboard size={compact ? 13 : 14} />
-        <span>Admin Panel</span>
+        <LayoutDashboard size={compact ? 14 : 15} />
+        <span className="mode-switcher-text">Admin Panel</span>
       </Link>
     </div>
   )
