@@ -44,6 +44,17 @@ export type ExpenseCategory =
 // Row Types
 // ─────────────────────────────────────────────────────────────────
 
+export interface GlobalProfile {
+  id: string
+  auth_user_id: string
+  full_name: string
+  phone: string | null
+  avatar_url: string | null
+  is_superadmin: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface Shop {
   id: string
   org_id: string | null
