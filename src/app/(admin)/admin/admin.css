@@ -62,7 +62,7 @@
   padding: 1.25rem;
   border-bottom: 1px solid var(--admin-border-subtle);
   display: flex;
-  items-center;
+  align-items: center;
   gap: 0.75rem;
 }
 
